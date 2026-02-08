@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Patient Analysis</h1>
+    <p style="text-align:center; color: #ccc;">Enter details to detect interactions.</p>
+
+    <form action="" method="post">
+        
+        <label for="age">Age</label>
+        <input type="number" id="age" name="age" required placeholder="e.g. 65">
+
+        <label for="gender">Gender</label>
+        <select id="gender" name="gender">
+            <option value="Male" style="color:black;">Male</option>
+            <option value="Female" style="color:black;">Female</option>
+        </select>
+
+        <label for="condition">Medical Condition</label>
+        <input type="text" id="condition" name="condition" required placeholder="e.g. Hypertension">
+
+        <label for="medications">Current Medications</label>
+        <textarea id="medications" name="medications" rows="3" placeholder="e.g. Aspirin, Warfarin"></textarea>
+
+        <button type="submit">
+            Check Interactions
+        </button>
+    </form>
+{% endblock %}

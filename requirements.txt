@@ -1,0 +1,5 @@
+Flask
+Flask-Loginç
+Flask-SQLAlchemy
+SQLAlchemy
+

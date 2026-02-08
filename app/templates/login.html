@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="max-width: 400px; margin: 50px auto; background: rgba(0,0,0,0.7); padding: 30px; border-radius: 10px; border: 1px solid var(--primary-neon);">
+    <h2 style="color: var(--primary-neon); text-align: center;">Login</h2>
+    
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div style="color: #ff4d4d; text-align: center; margin-bottom: 15px;">{{ messages[0] }}</div>
+        {% endif %}
+    {% endwith %}
+
+    <form method="post">
+        <div style="margin-bottom: 15px;">
+            <label style="color: #ccc;">Email Address</label>
+            <input type="email" name="email" required style="width: 100%; padding: 8px; margin-top:5px;">
+        </div>
+        <div style="margin-bottom: 20px;">
+            <label style="color: #ccc;">Password</label>
+            <input type="password" name="password" required style="width: 100%; padding: 8px; margin-top:5px;">
+        </div>
+        <button type="submit" style="width: 100%; background: var(--primary-neon); color: black; border: none; padding: 10px; font-weight: bold; cursor: pointer;">Login</button>
+    </form>
+    <p style="text-align: center; margin-top: 15px;">
+        <a href="{{ url_for('register') }}" style="color: white;">Create Account</a>
+    </p>
+</div>
+{% endblock %}
