@@ -4,25 +4,35 @@
 <div style="max-width: 400px; margin: 50px auto; background: rgba(0,0,0,0.7); padding: 30px; border-radius: 10px; border: 1px solid var(--primary-neon);">
     <h2 style="color: var(--primary-neon); text-align: center;">Login</h2>
     
-    {% with messages = get_flashed_messages() %}
-        {% if messages %}
-            <div style="color: #ff4d4d; text-align: center; margin-bottom: 15px;">{{ messages[0] }}</div>
-        {% endif %}
-    {% endwith %}
+    <form action="" method="post" novalidate>
+        {{ form.hidden_tag() }}
 
-    <form method="post">
         <div style="margin-bottom: 15px;">
-            <label style="color: #ccc;">Email Address</label>
-            <input type="email" name="email" required style="width: 100%; padding: 8px; margin-top:5px;">
+            <label style="color: #ccc;">{{ form.email.label }}</label>
+            {{ form.email(style="width: 100%; padding: 8px; margin-top:5px; background: transparent; border: 1px solid var(--primary-neon); color: white;") }}
+            {% for error in form.email.errors %}
+                <span style="color: #ff4d4d; font-size: 0.8em;">[{{ error }}]</span>
+            {% endfor %}
         </div>
+
         <div style="margin-bottom: 20px;">
-            <label style="color: #ccc;">Password</label>
-            <input type="password" name="password" required style="width: 100%; padding: 8px; margin-top:5px;">
+            <label style="color: #ccc;">{{ form.password.label }}</label>
+            {{ form.password(style="width: 100%; padding: 8px; margin-top:5px; background: transparent; border: 1px solid var(--primary-neon); color: white;") }}
+            {% for error in form.password.errors %}
+                <span style="color: #ff4d4d; font-size: 0.8em;">[{{ error }}]</span>
+            {% endfor %}
         </div>
-        <button type="submit" style="width: 100%; background: var(--primary-neon); color: black; border: none; padding: 10px; font-weight: bold; cursor: pointer;">Login</button>
+
+        <div style="margin-bottom: 10px; color: #ccc;">
+            {{ form.remember_me() }} {{ form.remember_me.label }}
+        </div>
+
+        {{ form.submit(style="width: 100%; background: var(--primary-neon); color: black; border: none; padding: 10px; font-weight: bold; cursor: pointer; text-transform: uppercase; letter-spacing: 2px;") }}
     </form>
+
     <p style="text-align: center; margin-top: 15px;">
-        <a href="{{ url_for('register') }}" style="color: white;">Create Account</a>
+        <span style="color: #aaa;">New user?</span> 
+        <a href="{{ url_for('register') }}" style="color: var(--primary-neon); text-decoration: none;">Create Account</a>
     </p>
 </div>
 {% endblock %}

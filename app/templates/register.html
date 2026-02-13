@@ -10,19 +10,24 @@
         {% endif %}
     {% endwith %}
 
-    <form method="post">
+    <form action="" method="post" novalidate>
+        {{ form.hidden_tag() }}
         <div style="margin-bottom: 15px;">
             <label style="color: #ccc;">Email Address</label>
-            <input type="email" name="email" required style="width: 100%; padding: 8px; margin-top:5px;">
+            {{ form.email(style="width: 100%; padding: 8px; margin-top:5px; background: transparent; border: 1px solid var(--primary-neon); color: white;") }}
+        </div>
+        <div style="margin-bottom: 15px;">
+            <label style="color: #ccc;">Password</label>
+            {{ form.password(style="width: 100%; padding: 8px; margin-top:5px; background: transparent; border: 1px solid var(--primary-neon); color: white;") }}
         </div>
         <div style="margin-bottom: 20px;">
-            <label style="color: #ccc;">Password</label>
-            <input type="password" name="password" required style="width: 100%; padding: 8px; margin-top:5px;">
+            <label style="color: #ccc;">Repeat Password</label>
+            {{ form.password_repeat(style="width: 100%; padding: 8px; margin-top:5px; background: transparent; border: 1px solid var(--primary-neon); color: white;") }}
         </div>
-        <button type="submit" style="width: 100%; background: var(--primary-neon); color: black; border: none; padding: 10px; font-weight: bold; cursor: pointer;">Register</button>
+        {{ form.submit(style="width: 100%; background: var(--primary-neon); color: black; border: none; padding: 10px; font-weight: bold; cursor: pointer;") }}
     </form>
     <p style="text-align: center; margin-top: 15px;">
-        <a href="{{ url_for('login') }}" style="color: white;">Back to Login</a>
+        <a href="{{ url_for('login') }}" style="color: white; text-decoration: none;">Already have an account? Login</a>
     </p>
 </div>
 {% endblock %}

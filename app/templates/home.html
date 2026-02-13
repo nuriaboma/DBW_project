@@ -1,28 +1,28 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <h1>Patient Analysis</h1>
-    <p style="text-align:center; color: #ccc;">Enter details to detect interactions.</p>
+<div style="text-align: center; margin-top: 100px;">
+    <h1 style="font-size: 3.5rem; color: #03e9f4; text-shadow: 0 0 20px rgba(3, 233, 244, 0.5); margin-bottom: 20px;">
+        Welcome to RxInsight
+    </h1>
+    
+    <p style="font-size: 1.5rem; margin-bottom: 40px; color: #ddd;">
+        Your professional tool for checking drug interactions and side effects safely.
+    </p>
 
-    <form action="" method="post">
-        
-        <label for="age">Age</label>
-        <input type="number" id="age" name="age" required placeholder="e.g. 65">
-
-        <label for="gender">Gender</label>
-        <select id="gender" name="gender">
-            <option value="Male" style="color:black;">Male</option>
-            <option value="Female" style="color:black;">Female</option>
-        </select>
-
-        <label for="condition">Medical Condition</label>
-        <input type="text" id="condition" name="condition" required placeholder="e.g. Hypertension">
-
-        <label for="medications">Current Medications</label>
-        <textarea id="medications" name="medications" rows="3" placeholder="e.g. Aspirin, Warfarin"></textarea>
-
-        <button type="submit">
-            Check Interactions
-        </button>
-    </form>
+    <a href="{{ url_for('index') }}" style="
+        display: inline-block;
+        padding: 15px 40px; 
+        font-size: 1.2rem; 
+        border: 2px solid #03e9f4; 
+        color: #03e9f4; 
+        text-decoration: none;
+        text-transform: uppercase; 
+        letter-spacing: 2px;
+        border-radius: 50px;
+        transition: 0.3s;
+        background: transparent;">
+        Start Checker
+    </a>
+</div>
 {% endblock %}

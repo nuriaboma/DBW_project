@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="max-width: 900px; margin: 40px auto; padding: 30px; background: rgba(10, 10, 10, 0.9); border: 1px solid var(--primary-neon); border-radius: 15px; box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);">
+    
+    <h1 style="color: var(--primary-neon); margin-bottom: 10px;">User Profile</h1>
+    <p style="color: #ccc; font-size: 1.1em;">
+        <strong style="color: white;">Email:</strong> {{ user.email }}
+    </p>
+    
+    <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 30px 0;">
+    
+    <h3 style="color: var(--secondary-neon); margin-bottom: 20px;">Recent Search History</h3>
+
+    {% if history %}
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; color: white; background: rgba(255,255,255,0.02);">
+                <thead>
+                    <tr style="border-bottom: 2px solid var(--secondary-neon); text-align: left;">
+                        <th style="padding: 15px;">Date/Time</th>
+                        <th style="padding: 15px;">Medications</th>
+                        <th style="padding: 15px;">Patient Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in history %}
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.3s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">
+                        <td style="padding: 15px; font-size: 0.9em; color: #aaa;">
+                            {{ item.timestamp.strftime('%Y-%m-%d %H:%M') }}
+                        </td>
+                        <td style="padding: 15px; font-weight: bold; color: var(--primary-neon);">
+                            {{ item.medications }}
+                        </td>
+                        <td style="padding: 15px; font-size: 0.9em;">
+                            <span style="color: #fff;">Age:</span> {{ item.age or '-' }} | 
+                            <span style="color: #fff;">Gender:</span> {{ item.gender or '-' }}<br>
+                            <small style="color: #888;">Condition: {{ item.condition or 'None' }}</small>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div style="text-align: center; padding: 40px; color: #666; border: 1px dashed #444; border-radius: 10px;">
+            <p>No search history found yet. Start your first check!</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
