@@ -21,10 +21,10 @@ class RegistrationForm(FlaskForm):
             raise ValidationError('Please use a different email address.')
 
 class SearchForm(FlaskForm):
-    # This was already there
+    # This is the main form for logged-in users
     drug_name = StringField('Enter Medication Name(s)', validators=[DataRequired()])
     
-    # NEW: Add these fields to match your index.html and routes.py
+    # Extra fields for the detailed analysis
     age = IntegerField('Age')
     gender = SelectField('Gender', choices=[
         ('not_specified', 'Not Specified'), 
@@ -35,3 +35,14 @@ class SearchForm(FlaskForm):
     condition = StringField('Existing Medical Conditions')
     
     submit = SubmitField('Search')
+
+class SimpleSearchForm(FlaskForm):
+    # This is the form for the public interaction checker
+    drug_name = StringField('Enter Medications', validators=[DataRequired()])
+    submit = SubmitField('Check Interactions')
+
+# app/forms.py (Add this to the bottom)
+
+class ConditionSearchForm(FlaskForm):
+    condition_name = StringField('Enter Medical Condition (e.g. Diabetes, Pain)', validators=[DataRequired()])
+    submit = SubmitField('Find Medications')

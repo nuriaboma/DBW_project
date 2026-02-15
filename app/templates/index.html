@@ -75,14 +75,23 @@
                     <p style="color: #fff;"><strong>Treats (Indication):</strong> {{ drug.condition or 'Information not available' }}</p>
                     
                     <h4 style="color: #ccc; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;">Known Side Effects:</h4>
-                    <ul style="color: #bbb; line-height: 1.6;">
+                    
+                    <ul id="sideEffectsList-{{ loop.index }}" style="color: #bbb; line-height: 1.6;">
                         {% for side_effect in drug.side_effects %}
                             <li>{{ side_effect.effect }}</li>
                         {% else %}
                             <li>No side effects listed in database.</li>
                         {% endfor %}
                     </ul>
-                </div>
+
+                    <div class="text-start mt-2">
+                        <button id="seeMoreBtn-{{ loop.index }}" 
+                                onclick="toggleSideEffects({{ loop.index }})"
+                                style="background: transparent; border: none; color: var(--primary-neon); font-weight: bold; cursor: pointer; display: none; padding: 0;">
+                            See more <i class="fas fa-chevron-down ms-1"></i>
+                        </button>
+                    </div>
+                    </div>
             {% endfor %}
         </div>
         
@@ -92,4 +101,67 @@
         </div>
     {% endif %}
 </div>
+
+<script>
+    /**
+     * initializes the list state. 
+     * If there are more than 5 items, it hides the rest and shows the button.
+     */
+    function initSideEffects(index) {
+        var list = document.getElementById('sideEffectsList-' + index);
+        var btn = document.getElementById('seeMoreBtn-' + index);
+        
+        // Safety check to ensure elements exist
+        if (!list || !btn) return;
+
+        var items = list.getElementsByTagName('li');
+        var limit = 5;
+
+        // Only act if we have more items than the limit
+        if (items.length > limit) {
+            btn.style.display = 'inline-block';
+            for (var i = limit; i < items.length; i++) {
+                items[i].style.display = 'none';
+            }
+        }
+    }
+
+    /**
+     * Toggles visibility of items > 5 when the button is clicked.
+     */
+    function toggleSideEffects(index) {
+        var list = document.getElementById('sideEffectsList-' + index);
+        var btn = document.getElementById('seeMoreBtn-' + index);
+        var items = list.getElementsByTagName('li');
+        var limit = 5;
+
+        // Check if the 6th item (index 5) is currently hidden
+        var isHidden = items[limit].style.display === 'none';
+
+        if (isHidden) {
+            // Show all items
+            for (var i = limit; i < items.length; i++) {
+                items[i].style.display = 'list-item';
+            }
+            btn.innerHTML = 'See less <i class="fas fa-chevron-up ms-1"></i>';
+        } else {
+            // Hide items > 5 again
+            for (var i = limit; i < items.length; i++) {
+                items[i].style.display = 'none';
+            }
+            btn.innerHTML = 'See more <i class="fas fa-chevron-down ms-1"></i>';
+        }
+    }
+
+    // Run initialization for every drug card once the DOM is fully loaded
+    document.addEventListener("DOMContentLoaded", function() {
+        // We use Jinja here to generate an init call for every drug present in the result
+        {% if drugs %}
+            {% for drug in drugs %}
+                initSideEffects({{ loop.index }});
+            {% endfor %}
+        {% endif %}
+    });
+</script>
+
 {% endblock %}

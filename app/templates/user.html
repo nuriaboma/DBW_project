@@ -29,8 +29,14 @@
                             {{ item.timestamp.strftime('%Y-%m-%d %H:%M') }}
                         </td>
                         <td style="padding: 15px; font-weight: bold; color: var(--primary-neon);">
-                            {{ item.medications }}
-                        </td>
+                            <a href="{{ url_for('index', query=item.medications, age=item.age, gender=item.gender, condition=item.condition) }}" 
+                               style="color: var(--primary-neon); text-decoration: none; border-bottom: 1px dashed var(--primary-neon); transition: 0.3s;"
+                               onmouseover="this.style.color='white'" 
+                               onmouseout="this.style.color='var(--primary-neon)'"
+                               title="Click to re-run this analysis">
+                                {{ item.medications }}
+                            </a>
+                            </td>
                         <td style="padding: 15px; font-size: 0.9em;">
                             <span style="color: #fff;">Age:</span> {{ item.age or '-' }} | 
                             <span style="color: #fff;">Gender:</span> {{ item.gender or '-' }}<br>

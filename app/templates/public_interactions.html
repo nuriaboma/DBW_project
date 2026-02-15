@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container" style="max-width: 800px; margin: 0 auto; padding: 40px 20px;">
+    
+    <div style="text-align: center; margin-bottom: 40px;">
+        <h1 style="color: var(--primary-neon); text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 15px rgba(3, 233, 244, 0.5);">
+            Quick Interaction Check
+        </h1>
+        <p style="color: #aaa;">Check for dangerous drug combinations instantly. No login required.</p>
+    </div>
+
+    <div style="background: rgba(255,255,255,0.02); padding: 30px; border-radius: 15px; border: 1px solid rgba(3, 233, 244, 0.3);">
+        <form action="" method="post" novalidate>
+            {{ form.hidden_tag() }} 
+
+            <div style="margin-bottom: 20px;">
+                <label style="color: var(--primary-neon); font-weight: bold; font-size: 1.1em; display: block; margin-bottom: 10px;">
+                    Enter Medications (e.g. Aspirin, Warfarin)
+                </label>
+                {{ form.drug_name(
+                    placeholder="Type drug names here...", 
+                    style="width: 100%; padding: 15px; background: rgba(0,0,0,0.3); border: 1px solid var(--primary-neon); color: white; border-radius: 8px; font-size: 18px;"
+                ) }}
+            </div>
+            
+            <div style="text-align: center;">
+                {{ form.submit(
+                    style="padding: 15px 60px; background: transparent; color: var(--primary-neon); font-weight: bold; border: 2px solid var(--primary-neon); cursor: pointer; border-radius: 50px; text-transform: uppercase; transition: 0.3s; font-size: 1.1em;"
+                ) }}
+            </div>
+        </form>
+    </div>
+
+    <hr style="border-color: var(--primary-neon); opacity: 0.3; margin: 50px 0;">
+
+    {% if interactions %}
+        <div style="background: rgba(255, 0, 0, 0.15); border: 2px solid #ff4d4d; padding: 25px; border-radius: 12px; margin-bottom: 40px; box-shadow: 0 0 20px rgba(255, 77, 77, 0.4); animation: fadeIn 0.5s ease-in;">
+            <h2 style="color: #ff4d4d; margin-top: 0; text-transform: uppercase; text-align: center;">
+                ⚠️ Warning: Interactions Found
+            </h2>
+            {% for inter in interactions %}
+                <div style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
+                    <div style="font-size: 1.4em; color: white; margin-bottom: 10px;">
+                        {{ inter.drug1_name }} <span style="color: #ff4d4d;">+</span> {{ inter.drug2_name }}
+                    </div>
+                    <p style="color: #eee; font-size: 1.1em;">{{ inter.description }}</p>
+                    {% if inter.severity %}
+                        <span style="background: #ff4d4d; color: black; padding: 4px 12px; border-radius: 4px; font-weight: bold;">
+                            SEVERITY: {{ inter.severity }}
+                        </span>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    {% elif drugs and not interactions %}
+        <div style="text-align: center; padding: 30px; border: 1px solid #0f0; background: rgba(0, 255, 0, 0.05); border-radius: 12px;">
+            <h2 style="color: #0f0;">✅ No Interactions Found</h2>
+            <p style="color: #ddd;">Based on our database, no known interactions were found between:</p>
+            <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                {% for drug in drugs %}
+                    <span style="background: rgba(3, 233, 244, 0.1); color: var(--primary-neon); padding: 5px 15px; border-radius: 20px; border: 1px solid var(--primary-neon);">
+                        {{ drug.name }}
+                    </span>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    <div style="text-align: center; margin-top: 50px;">
+        <p style="color: #888;">Need a detailed analysis with side effects based on your age and gender?</p>
+        <a href="{{ url_for('login') }}" style="color: var(--secondary-neon); text-decoration: none; border-bottom: 1px dashed var(--secondary-neon);">
+            Log in for Full Analysis
+        </a>
+    </div>
+
+</div>
+{% endblock %}
