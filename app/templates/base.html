@@ -39,7 +39,7 @@
             margin-bottom: 40px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.5);
             box-sizing: border-box;
-            display: flex;             
+            display: flex;              
             justify-content: space-between; 
             align-items: center;
         }
@@ -65,6 +65,72 @@
             color: var(--primary-neon);
             text-decoration: none;
             margin-left: 0;
+        }
+
+        /* --- DROPDOWN MENU STYLES (NEW) --- */
+        .dropdown {
+            position: relative;
+            display: inline-block;
+            margin-left: 20px;
+        }
+
+        .dropbtn {
+            background-color: transparent;
+            color: var(--text-color);
+            padding: 0;
+            font-size: 0.9em;
+            border: none;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: bold;
+            font-family: 'Segoe UI', sans-serif;
+            width: auto; /* Override global button width */
+        }
+
+        .dropbtn:hover {
+            color: var(--primary-neon);
+            text-shadow: 0 0 5px var(--primary-neon);
+            background: transparent;
+            box-shadow: none;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: rgba(10, 10, 10, 0.95);
+            min-width: 220px;
+            box-shadow: 0 0 15px rgba(3, 233, 244, 0.2);
+            border: 1px solid var(--primary-neon);
+            border-radius: 5px;
+            z-index: 1000;
+            top: 100%;
+            left: 0;
+            margin-top: 0;
+        }
+
+        .dropdown-content a {
+            color: white;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-left: 0; /* Override nav a margin */
+        }
+
+        .dropdown-content a:last-child {
+            border-bottom: none;
+        }
+
+        .dropdown-content a:hover {
+            background-color: rgba(3, 233, 244, 0.1);
+            color: var(--primary-neon);
+            padding-left: 25px; /* Slide effect */
+        }
+
+        .dropdown:hover .dropdown-content {
+            display: block;
         }
 
         /* --- THE GLASSMORPHISM CARD --- */
@@ -146,6 +212,7 @@
             color: var(--primary-neon);
             text-transform: uppercase;
             letter-spacing: 1px;
+        }
         tr:hover {
             background: rgba(255,255,255,0.05);
         }
@@ -156,15 +223,25 @@
     <nav>
         <a href="{{ url_for('home') }}" class="nav-brand">RXInsight</a>
         
-        <div>
+        <div style="display: flex; align-items: center;">
+            <a href="{{ url_for('home') }}">Home</a>
+
+            <div class="dropdown">
+                <button class="dropbtn">Public Tools &#9662;</button>
+                <div class="dropdown-content">
+                    <a href="{{ url_for('public_interactions') }}">Interaction Check</a>
+                    <a href="{{ url_for('public_conditions') }}">Find Meds by Disease</a>
+                </div>
+            </div>
+            
             {% if current_user.is_authenticated %}
                 <a href="{{ url_for('index') }}">Search Tool</a>
                 <span style="color: #555; margin: 0 15px;">|</span>
-                <a href="{{ url_for('user') }}">user</a>
-                <a href="{{ url_for('logout') }}" style="color: #ff4d4d; margin-left: 15px; border: 1px solid #ff4d4d; padding: 5px 10px; border-radius: 4px;">Logout</a>
+                <a href="{{ url_for('user') }}">Profile</a>
+                <a href="{{ url_for('logout') }}" style="color: #ff4d4d; border: 1px solid #ff4d4d; padding: 5px 10px; border-radius: 4px; margin-left: 20px;">Logout</a>
             {% else %}
                 <a href="{{ url_for('login') }}">Login</a>
-                <a href="{{ url_for('register') }}" style="border: 1px solid var(--primary-neon); padding: 5px 15px; border-radius: 4px; margin-left: 15px;">Register</a>
+                <a href="{{ url_for('register') }}" style="border: 1px solid var(--primary-neon); padding: 5px 15px; border-radius: 4px; margin-left: 20px;">Register</a>
             {% endif %}
         </div>
     </nav>
