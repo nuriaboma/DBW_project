@@ -1,0 +1,28 @@
+Terminal 1:
+sudo apt update
+sudo apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+docker-compose up -d
+
+mysql -h 127.0.0.1 -P 3307 -u root -p
+password: root
+
+mysql>>> CREATE DATABASE rxinsight;
+
+
+Terminal 2:
+mysql -h 127.0.0.1 -P 3307 -u root -p rxinsight < ./db/rxinsight.sql
+
+
+Now the sql tables are created.
+
+
+
+Remove docker: docker-compose down -v
+
+
+
+Intererstin command: flask shell
+>>> write python code to check what should be happening in the webpage
+
+
