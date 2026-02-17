@@ -1,5 +1,5 @@
 Flask
-Flask-Loginç
+Flask-Login
 Flask-SQLAlchemy
 SQLAlchemy
-
+pymysql     

@@ -74,15 +74,15 @@
                     <h3 style="color: var(--primary-neon); margin-top: 0; font-size: 24px;">{{ drug.name }}</h3>
                     <p style="color: #fff;"><strong>Treats (Indication):</strong> {{ drug.condition or 'Information not available' }}</p>
                     
-                    <h4 style="color: #ccc; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;">Known Side Effects:</h4>
-                    
                     <ul id="sideEffectsList-{{ loop.index }}" style="color: #bbb; line-height: 1.6;">
                         {% for side_effect in drug.side_effects %}
-                            <li>{{ side_effect.effect }}</li>
+                            <li>{{ side_effect.Name }}</li>
                         {% else %}
                             <li>No side effects listed in database.</li>
                         {% endfor %}
                     </ul>
+
+
 
                     <div class="text-start mt-2">
                         <button id="seeMoreBtn-{{ loop.index }}" 

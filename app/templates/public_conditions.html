@@ -42,9 +42,9 @@
         <div style="display: grid; gap: 20px;">
             {% for drug in drugs %}
                 <div style="background: rgba(10, 10, 10, 0.8); border: 1px solid #444; border-left: 4px solid var(--secondary-neon); padding: 20px; border-radius: 8px; transition: transform 0.2s;">
-                    <h3 style="color: var(--secondary-neon); margin-top: 0;">{{ drug.name }}</h3>
+                    <h3 style="color: var(--secondary-neon); margin-top: 0;">{{ drug.Name }}</h3>
                     <p style="color: #ccc; margin-bottom: 5px;">
-                        <strong>Indication:</strong> {{ drug.condition }}
+                        <strong>Indication:</strong> {{ drug.disease }}
                     </p>
                     <div style="margin-top: 10px;">
                         <a href="{{ url_for('public_interactions') }}" style="font-size: 0.85em; color: #888; text-decoration: none; border-bottom: 1px dashed #555;">

@@ -41,7 +41,6 @@ class SimpleSearchForm(FlaskForm):
     drug_name = StringField('Enter Medications', validators=[DataRequired()])
     submit = SubmitField('Check Interactions')
 
-# app/forms.py (Add this to the bottom)
 
 class ConditionSearchForm(FlaskForm):
     condition_name = StringField('Enter Medical Condition (e.g. Diabetes, Pain)', validators=[DataRequired()])
