@@ -14,14 +14,22 @@
         <form action="" method="post" novalidate>
             {{ form.hidden_tag() }} 
 
-            <div style="margin-bottom: 20px;">
+            <div style="margin-bottom: 20px; position: relative;">
                 <label style="color: var(--primary-neon); font-weight: bold; font-size: 1.1em; display: block; margin-bottom: 10px;">
                     Medical Condition
                 </label>
                 {{ form.condition_name(
-                    placeholder="e.g. Hypertension, Diabetes, Headache...", 
-                    style="width: 100%; padding: 15px; background: rgba(0,0,0,0.3); border: 1px solid var(--primary-neon); color: white; border-radius: 8px; font-size: 18px;"
+                    id="condition_name_input",
+                    placeholder="e.g. Hypertension, Diabetes, Headache...",
+                    style="width: 100%; padding: 15px; background: rgba(0,0,0,0.3); border: 1px solid var(--primary-neon); color: white; border-radius: 8px; font-size: 18px;",
+                    autocomplete="off"
                 ) }}
+                <ul id="autocomplete-list" style="
+                    display: none; position: absolute; top: 100%; left: 0; right: 0;
+                    background: rgba(10,10,10,0.97); border: 1px solid var(--primary-neon);
+                    border-top: none; border-radius: 0 0 8px 8px; list-style: none;
+                    margin: 0; padding: 0; z-index: 999; max-height: 220px; overflow-y: auto;">
+                </ul>
             </div>
             
             <div style="text-align: center;">
@@ -66,4 +74,71 @@
     </div>
 
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var input = document.getElementById('condition_name_input');
+        var list  = document.getElementById('autocomplete-list');
+        var debounceTimer;
+
+        if (!input) return;
+
+        input.addEventListener('input', function() {
+            clearTimeout(debounceTimer);
+            var query = this.value.trim();
+
+            if (query.length < 2) { list.style.display = 'none'; return; }
+
+            debounceTimer = setTimeout(function() {
+                fetch('/api/conditions?q=' + encodeURIComponent(query))
+                    .then(function(r) { return r.json(); })
+                    .then(function(suggestions) {
+                        list.innerHTML = '';
+                        if (!suggestions.length) { list.style.display = 'none'; return; }
+
+                        suggestions.forEach(function(name) {
+                            var li = document.createElement('li');
+                            li.textContent = name;
+                            li.style.cssText = 'padding: 11px 16px; cursor: pointer; color: #fff; font-size: 0.95em; border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.15s;';
+                            li.addEventListener('mouseenter', function() { this.style.background = 'rgba(3,233,244,0.12)'; this.style.color = '#03e9f4'; });
+                            li.addEventListener('mouseleave', function() { this.style.background = 'transparent'; this.style.color = '#fff'; });
+                            li.addEventListener('mousedown', function(e) {
+                                e.preventDefault();
+                                input.value = name;
+                                list.style.display = 'none';
+                                input.focus();
+                            });
+                            list.appendChild(li);
+                        });
+                        list.style.display = 'block';
+                    });
+            }, 200);
+        });
+
+        document.addEventListener('click', function(e) {
+            if (e.target !== input) list.style.display = 'none';
+        });
+
+        input.addEventListener('keydown', function(e) {
+            var items  = list.querySelectorAll('li');
+            var active = list.querySelector('li.active');
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                var next = active ? active.nextElementSibling : items[0];
+                if (active) { active.classList.remove('active'); active.style.background = 'transparent'; active.style.color = '#fff'; }
+                if (next)   { next.classList.add('active'); next.style.background = 'rgba(3,233,244,0.12)'; next.style.color = '#03e9f4'; }
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                var prev = active ? active.previousElementSibling : items[items.length - 1];
+                if (active) { active.classList.remove('active'); active.style.background = 'transparent'; active.style.color = '#fff'; }
+                if (prev)   { prev.classList.add('active'); prev.style.background = 'rgba(3,233,244,0.12)'; prev.style.color = '#03e9f4'; }
+            } else if (e.key === 'Enter' && active) {
+                e.preventDefault();
+                active.dispatchEvent(new MouseEvent('mousedown'));
+            } else if (e.key === 'Escape') {
+                list.style.display = 'none';
+            }
+        });
+    });
+</script>
 {% endblock %}

@@ -237,6 +237,7 @@
             {% if current_user.is_authenticated %}
                 <a href="{{ url_for('index') }}">Search Tool</a>
                 <span style="color: #555; margin: 0 15px;">|</span>
+                <a href="{{ url_for('stats') }}">Stats</a>
                 <a href="{{ url_for('user') }}">Profile</a>
                 <a href="{{ url_for('logout') }}" style="color: #ff4d4d; border: 1px solid #ff4d4d; padding: 5px 10px; border-radius: 4px; margin-left: 20px;">Logout</a>
             {% else %}

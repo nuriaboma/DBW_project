@@ -8,10 +8,10 @@ def load_user(id):
     return User.query.get(int(id))
 
 class User(UserMixin, db.Model):
-    # Using iduser to match your route logic, while keeping it compatible with Flask-Login
     iduser = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), index=True, unique=True, nullable=False)
-    password = db.Column(db.String(128), nullable=False)
+    # 1. CHANGE: This must match the name used in set_password/check_password
+    password_hash = db.Column(db.String(128), nullable=False) 
     
     @property
     def id(self):
@@ -21,10 +21,12 @@ class User(UserMixin, db.Model):
         return str(self.iduser)
 
     def set_password(self, password_input):
-        self.password = generate_password_hash(password_input)
+        # This writes to self.password_hash
+        self.password_hash = generate_password_hash(password_input, method='pbkdf2:sha256')
         
     def check_password(self, password_input):
-        return check_password_hash(self.password, password_input)
+        # 2. FIX: Changed self.password to self.password_hash
+        return check_password_hash(self.password_hash, password_input)
 
 class Drug(db.Model):
     id = db.Column(db.Integer, primary_key=True)

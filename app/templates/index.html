@@ -23,17 +23,36 @@
             </div>
         </div>
 
-        <div style="margin-bottom: 25px;">
+        <div style="margin-bottom: 25px; position: relative;">
             <label style="color: var(--primary-neon); font-weight: bold;">Existing Medical Conditions</label>
-            {{ form.condition(placeholder="e.g. Diabetes, Hypertension", style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid #fff; color: white; border-radius: 5px;") }}
+            {{ form.condition(
+                id="condition_input",
+                placeholder="e.g. Diabetes, Hypertension",
+                style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid #fff; color: white; border-radius: 5px; box-sizing: border-box;",
+                autocomplete="off"
+            ) }}
+            <ul id="condition-autocomplete-list" style="
+                display: none; position: absolute; top: 100%; left: 0; right: 0;
+                background: rgba(10,10,10,0.97); border: 1px solid var(--primary-neon);
+                border-top: none; border-radius: 0 0 8px 8px; list-style: none;
+                margin: 0; padding: 0; z-index: 999; max-height: 220px; overflow-y: auto;">
+            </ul>
         </div>
 
-        <div style="margin-bottom: 30px;">
+        <div style="margin-bottom: 30px; position: relative;">
             <label style="color: var(--primary-neon); font-weight: bold;">Enter Medications (separate with commas or spaces)</label>
             {{ form.drug_name(
-                placeholder="e.g., Aspirin, Metformin, Lisinopril", 
-                style="width: 100%; padding: 15px; background: rgba(255,255,255,0.05); border: 1px solid var(--primary-neon); color: white; border-radius: 8px; font-size: 16px;"
+                id="drug_name_input",
+                placeholder="e.g., Aspirin, Metformin, Lisinopril",
+                style="width: 100%; padding: 15px; background: rgba(255,255,255,0.05); border: 1px solid var(--primary-neon); color: white; border-radius: 8px; font-size: 16px; box-sizing: border-box;",
+                autocomplete="off"
             ) }}
+            <ul id="autocomplete-list" style="
+                display: none; position: absolute; top: 100%; left: 0; right: 0;
+                background: rgba(10,10,10,0.97); border: 1px solid var(--primary-neon);
+                border-top: none; border-radius: 0 0 8px 8px; list-style: none;
+                margin: 0; padding: 0; z-index: 999; max-height: 220px; overflow-y: auto;">
+            </ul>
             {% for error in form.drug_name.errors %}
                 <span style="color: #ff4d4d; display: block; margin-top: 5px;">[{{ error }}]</span>
             {% endfor %}
@@ -64,7 +83,25 @@
     {% endif %}
 
     {% if drugs %}
-        <h2 style="color: var(--primary-neon); margin-bottom: 25px;">Analysis Results:</h2>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+            <h2 style="color: var(--primary-neon); margin: 0;">Analysis Results:</h2>
+            <form action="{{ url_for('export_pdf') }}" method="post" style="margin: 0;">
+                {{ form.hidden_tag() }}
+                <input type="hidden" name="drug_name" value="{{ form.drug_name.data }}">
+                <input type="hidden" name="age"       value="{{ form.age.data }}">
+                <input type="hidden" name="gender"    value="{{ form.gender.data }}">
+                <input type="hidden" name="condition" value="{{ form.condition.data }}">
+                <button type="submit" style="
+                    padding: 10px 22px; background: transparent;
+                    color: var(--primary-neon); border: 1px solid var(--primary-neon);
+                    border-radius: 5px; cursor: pointer; font-size: 0.85rem;
+                    text-transform: uppercase; letter-spacing: 2px; transition: 0.3s;"
+                    onmouseover="this.style.background='var(--primary-neon)';this.style.color='#000'"
+                    onmouseout="this.style.background='transparent';this.style.color='var(--primary-neon)'">
+                    &#8659; Export PDF
+                </button>
+            </form>
+        </div>
         
         <div style="display: grid; grid-template-columns: 1fr; gap: 25px;">
             {% for drug in drugs %}
@@ -155,12 +192,138 @@
 
     // Run initialization for every drug card once the DOM is fully loaded
     document.addEventListener("DOMContentLoaded", function() {
-        // We use Jinja here to generate an init call for every drug present in the result
         {% if drugs %}
             {% for drug in drugs %}
                 initSideEffects({{ loop.index }});
             {% endfor %}
         {% endif %}
+
+        // ── CONDITION AUTOCOMPLETE ────────────────────────────────────
+        var condInput = document.getElementById('condition_input');
+        var condList  = document.getElementById('condition-autocomplete-list');
+        var condTimer;
+
+        if (condInput) {
+            condInput.addEventListener('input', function() {
+                clearTimeout(condTimer);
+                var query = this.value.trim();
+                if (query.length < 2) { condList.style.display = 'none'; return; }
+                condTimer = setTimeout(function() {
+                    fetch('/api/conditions?q=' + encodeURIComponent(query))
+                        .then(function(r) { return r.json(); })
+                        .then(function(suggestions) {
+                            condList.innerHTML = '';
+                            if (!suggestions.length) { condList.style.display = 'none'; return; }
+                            suggestions.forEach(function(name) {
+                                var li = document.createElement('li');
+                                li.textContent = name;
+                                li.style.cssText = 'padding: 11px 16px; cursor: pointer; color: #fff; font-size: 0.95em; border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.15s;';
+                                li.addEventListener('mouseenter', function() { this.style.background = 'rgba(3,233,244,0.12)'; this.style.color = '#03e9f4'; });
+                                li.addEventListener('mouseleave', function() { this.style.background = 'transparent'; this.style.color = '#fff'; });
+                                li.addEventListener('mousedown', function(e) {
+                                    e.preventDefault();
+                                    condInput.value = name;
+                                    condList.style.display = 'none';
+                                    condInput.focus();
+                                });
+                                condList.appendChild(li);
+                            });
+                            condList.style.display = 'block';
+                        });
+                }, 200);
+            });
+
+            document.addEventListener('click', function(e) {
+                if (e.target !== condInput) condList.style.display = 'none';
+            });
+
+            condInput.addEventListener('keydown', function(e) {
+                var items  = condList.querySelectorAll('li');
+                var active = condList.querySelector('li.active');
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    var next = active ? active.nextElementSibling : items[0];
+                    if (active) { active.classList.remove('active'); active.style.background = 'transparent'; active.style.color = '#fff'; }
+                    if (next)   { next.classList.add('active'); next.style.background = 'rgba(3,233,244,0.12)'; next.style.color = '#03e9f4'; }
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    var prev = active ? active.previousElementSibling : items[items.length - 1];
+                    if (active) { active.classList.remove('active'); active.style.background = 'transparent'; active.style.color = '#fff'; }
+                    if (prev)   { prev.classList.add('active'); prev.style.background = 'rgba(3,233,244,0.12)'; prev.style.color = '#03e9f4'; }
+                } else if (e.key === 'Enter' && active) {
+                    e.preventDefault();
+                    active.dispatchEvent(new MouseEvent('mousedown'));
+                } else if (e.key === 'Escape') {
+                    condList.style.display = 'none';
+                }
+            });
+        }
+
+        // ── DRUG AUTOCOMPLETE ─────────────────────────────────────────
+        var drugInput = document.getElementById('drug_name_input');
+        var drugList  = document.getElementById('autocomplete-list');
+        var drugTimer;
+
+        if (drugInput) {
+            drugInput.addEventListener('input', function() {
+                clearTimeout(drugTimer);
+                var raw   = this.value;
+                var parts = raw.split(/[,\s]+/);
+                var query = parts[parts.length - 1].trim();
+
+                if (query.length < 2) { drugList.style.display = 'none'; return; }
+
+                drugTimer = setTimeout(function() {
+                    fetch('/api/drugs?q=' + encodeURIComponent(query))
+                        .then(function(r) { return r.json(); })
+                        .then(function(suggestions) {
+                            drugList.innerHTML = '';
+                            if (!suggestions.length) { drugList.style.display = 'none'; return; }
+                            suggestions.forEach(function(name) {
+                                var li = document.createElement('li');
+                                li.textContent = name;
+                                li.style.cssText = 'padding: 11px 16px; cursor: pointer; color: #fff; font-size: 0.95em; border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.15s;';
+                                li.addEventListener('mouseenter', function() { this.style.background = 'rgba(3,233,244,0.12)'; this.style.color = '#03e9f4'; });
+                                li.addEventListener('mouseleave', function() { this.style.background = 'transparent'; this.style.color = '#fff'; });
+                                li.addEventListener('mousedown', function(e) {
+                                    e.preventDefault();
+                                    parts[parts.length - 1] = name;
+                                    drugInput.value = parts.filter(Boolean).join(', ') + ', ';
+                                    drugList.style.display = 'none';
+                                    drugInput.focus();
+                                });
+                                drugList.appendChild(li);
+                            });
+                            drugList.style.display = 'block';
+                        });
+                }, 200);
+            });
+
+            document.addEventListener('click', function(e) {
+                if (e.target !== drugInput) drugList.style.display = 'none';
+            });
+
+            drugInput.addEventListener('keydown', function(e) {
+                var items  = drugList.querySelectorAll('li');
+                var active = drugList.querySelector('li.active');
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    var next = active ? active.nextElementSibling : items[0];
+                    if (active) { active.classList.remove('active'); active.style.background = 'transparent'; active.style.color = '#fff'; }
+                    if (next)   { next.classList.add('active'); next.style.background = 'rgba(3,233,244,0.12)'; next.style.color = '#03e9f4'; }
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    var prev = active ? active.previousElementSibling : items[items.length - 1];
+                    if (active) { active.classList.remove('active'); active.style.background = 'transparent'; active.style.color = '#fff'; }
+                    if (prev)   { prev.classList.add('active'); prev.style.background = 'rgba(3,233,244,0.12)'; prev.style.color = '#03e9f4'; }
+                } else if (e.key === 'Enter' && active) {
+                    e.preventDefault();
+                    active.dispatchEvent(new MouseEvent('mousedown'));
+                } else if (e.key === 'Escape') {
+                    drugList.style.display = 'none';
+                }
+            });
+        }
     });
 </script>
 
