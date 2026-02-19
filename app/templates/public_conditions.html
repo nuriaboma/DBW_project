@@ -8,7 +8,7 @@
             ✅ Medications found for the condition:
             <strong>{{ form.condition_name.data }}</strong>.
         </div>
-    {% elif request.method == 'POST' and drugs_for_condition is none %}
+    {% elif request.method == 'POST' and (drugs_for_condition is none or drugs_for_condition|length == 0)  %}
         <div class="interaction-empty" style="margin-bottom: 20px;">
             ⚠️ No medications found for the condition:
             <strong>{{ form.condition_name.data }}</strong>.
@@ -28,9 +28,11 @@
         <form action="" method="post" novalidate>
             {{ form.hidden_tag() }} 
 
-            <div class="med-field">
+            <div class="med-field autocomplete-wrapper">
                 <label class="med-label">Medical Condition</label>
                 {{ form.condition_name(class="med-input", placeholder="e.g. Hypertension, Diabetes") }}
+                <ul id="autocomplete-list" class="autocomplete-list"></ul>
+
             </div>
 
             <div class="med-field">
@@ -91,7 +93,7 @@
             {% endfor %}
         </div>
 
-    {% elif request.method == 'POST' and drugs_for_condition is not none and not drugs %}
+    {% elif request.method == 'POST' and drugs_for_condition is not none and not drugs and not drugs_for_condition|length == 0%}
         <div class="interaction-empty">
             ⚠️ No medications found for the selected route: 
             <strong>{{ form.route_filter.data }}</strong>. Please try another.
@@ -105,4 +107,72 @@
     </div>
 
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var input = document.getElementById('condition_name');
+        var list  = document.getElementById('autocomplete-list');
+        var debounceTimer;
+
+        if (!input) return;
+
+        input.addEventListener('input', function() {
+            clearTimeout(debounceTimer);
+            var query = this.value.trim();
+
+            if (query.length < 2) { list.style.display = 'none'; return; }
+
+            debounceTimer = setTimeout(function() {
+                fetch('/api/conditions?q=' + encodeURIComponent(query))
+                    .then(function(r) { return r.json(); })
+                    .then(function(suggestions) {
+                        list.innerHTML = '';
+                        if (!suggestions.length) { list.style.display = 'none'; return; }
+
+                        suggestions.forEach(function(name) {
+                            var li = document.createElement('li');
+                            li.textContent = name;
+                            li.style.cssText = 'padding: 11px 16px; cursor: pointer; color: #fff; font-size: 0.95em; border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.15s;';
+                            li.addEventListener('mouseenter', function() { this.style.background = 'rgba(3,233,244,0.12)'; this.style.color = '#03e9f4'; });
+                            li.addEventListener('mouseleave', function() { this.style.background = 'transparent'; this.style.color = '#fff'; });
+                            li.addEventListener('mousedown', function(e) {
+                                e.preventDefault();
+                                input.value = name;
+                                list.style.display = 'none';
+                                input.focus();
+                            });
+                            list.appendChild(li);
+                        });
+                        list.style.display = 'block';
+                    });
+            }, 200);
+        });
+
+        document.addEventListener('click', function(e) {
+            if (e.target !== input) list.style.display = 'none';
+        });
+
+        input.addEventListener('keydown', function(e) {
+            var items  = list.querySelectorAll('li');
+            var active = list.querySelector('li.active');
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                var next = active ? active.nextElementSibling : items[0];
+                if (active) { active.classList.remove('active'); active.style.background = 'transparent'; active.style.color = '#fff'; }
+                if (next)   { next.classList.add('active'); next.style.background = 'rgba(3,233,244,0.12)'; next.style.color = '#03e9f4'; }
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                var prev = active ? active.previousElementSibling : items[items.length - 1];
+                if (active) { active.classList.remove('active'); active.style.background = 'transparent'; active.style.color = '#fff'; }
+                if (prev)   { prev.classList.add('active'); prev.style.background = 'rgba(3,233,244,0.12)'; prev.style.color = '#03e9f4'; }
+            } else if (e.key === 'Enter' && active) {
+                e.preventDefault();
+                active.dispatchEvent(new MouseEvent('mousedown'));
+            } else if (e.key === 'Escape') {
+                list.style.display = 'none';
+            }
+        });
+    });
+</script>
+
 {% endblock %}

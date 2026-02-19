@@ -10,7 +10,7 @@ def load_user(id):
 
 # Association table for Drugs <-> SideEffects
 Drugs_has_SideEffects = db.Table(
-    "Drugs_has_SideEffects",  # exact MySQL table name
+    "Drugs_has_SideEffects",  
     db.Column("Drugs_idDrug", db.Integer, db.ForeignKey("Drugs.idDrug"), primary_key=True),
     db.Column("SideEffects_idSideEffect", db.Integer, db.ForeignKey("SideEffects.idSideEffect"), primary_key=True)
 )

@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="stats-container">
+
+    <!-- Header -->
+    <div class="stats-header">
+        <h1 class="stats-title">Statistics</h1>
+    </div>
+
+    <div class="stats-header">
+        <h2 class="stats-subtitle">Global Statistics</h2>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+
+        {% set kpis = [
+            ('Side Effects in Database', total_sideeffects_db, '👤', '#a78bfa'),
+            ('Drugs in Database', total_drugs, '💊', '#34d399'),
+            ('Known Interactions', total_interactions_db, '⚠️', '#ff4d4d')
+        ] %}
+
+        {% for label, value, icon, color in kpis %}
+        <div class="kpi-card" style="--accent: {{ color }};">
+            <div class="kpi-icon">{{ icon }}</div>
+            <div class="kpi-value" data-target="{{ value }}">0</div>
+            <div class="kpi-label">{{ label }}</div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="stats-header">
+        <h2 class="stats-subtitle">Personal Statistics</h2>
+    </div>
+
+    <div class="kpi-grid2">
+
+        {% set kpis = [
+            ('Total Entries', total_user_entries, '👤', '#f59e0b')
+        ] %}
+
+        {% for label, value, icon, color in kpis %}
+        <div class="kpi-card" style="--accent: {{ color }};">
+            <div class="kpi-icon">{{ icon }}</div>
+            <div class="kpi-value" data-target="{{ value }}">0</div>
+            <div class="kpi-label">{{ label }}</div>
+        </div>
+        {% endfor %}
+    </div>
+
+
+    <!-- Charts -->
+    <div class="charts-grid">
+
+        <div class="chart-card">
+            <h3 class="chart-title">Entries — Last 7 Days</h3>
+            <canvas id="searchChart" height="200"></canvas>
+        </div>
+
+        <div class="chart-card">
+            <h3 class="chart-title">Top Used Drugs</h3>
+            <canvas id="drugsChart" height="200"></canvas>
+        </div>
+    </div>
+
+</div>
+
+
+<!-- Chart.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+document.querySelectorAll('.kpi-value').forEach(el => {
+    const target = parseInt(el.dataset.target) || 0;
+    const duration = 1200;
+    const start = performance.now();
+
+    function step(now) {
+        const progress = Math.min((now - start) / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        el.textContent = Math.floor(eased * target).toLocaleString();
+        if (progress < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+});
+
+Chart.defaults.color = '#666';
+const NEON = '#03e9f4';
+const GRID = 'rgba(255,255,255,0.05)';
+
+new Chart(document.getElementById('searchChart'), {
+    type: 'line',
+    data: {
+        labels: {{ search_labels | tojson }},
+        datasets: [{
+            data: {{ search_data | tojson }},
+            borderColor: NEON,
+            backgroundColor: 'rgba(3,233,244,0.08)',
+            tension: 0.4,
+            fill: true
+        }]
+    },
+    options: {
+        plugins: { legend: { display: false } },
+        scales: {
+            x: { grid: { color: GRID } },
+            y: { grid: { color: GRID }, beginAtZero: true }
+        }
+    }
+});
+
+new Chart(document.getElementById('drugsChart'), {
+    type: 'bar',
+    data: {
+        labels: {{ drug_labels | tojson }},
+        datasets: [{
+            data: {{ drug_data | tojson }},
+            backgroundColor: 'rgba(3,233,244,0.7)',
+            borderRadius: 6
+        }]
+    },
+    options: {
+        indexAxis: 'y',
+        plugins: { legend: { display: false } }
+    }
+});
+</script>
+
+{% endblock %}
