@@ -1,38 +1,47 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div style="max-width: 400px; margin: 50px auto; background: rgba(0,0,0,0.7); padding: 30px; border-radius: 10px; border: 1px solid var(--primary-neon);">
-    <h2 style="color: var(--primary-neon); text-align: center;">Login</h2>
-    
+
+{% if login_error %}
+    <div class="interaction-empty" style="margin-bottom: 20px;">
+        {{ login_error }}
+    </div>
+{% endif %}
+
+<div class="login-container">
+
+    <h2 class="login-title">Login</h2>
+
     <form action="" method="post" novalidate>
         {{ form.hidden_tag() }}
 
-        <div style="margin-bottom: 15px;">
-            <label style="color: #ccc;">{{ form.email.label }}</label>
-            {{ form.email(style="width: 100%; padding: 8px; margin-top:5px; background: transparent; border: 1px solid var(--primary-neon); color: white;") }}
+        <div class="login-group">
+            <label class="login-label">{{ form.email.label }}</label>
+            {{ form.email(class="login-input") }}
             {% for error in form.email.errors %}
-                <span style="color: #ff4d4d; font-size: 0.8em;">[{{ error }}]</span>
+                <span class="login-error">[{{ error }}]</span>
             {% endfor %}
         </div>
 
-        <div style="margin-bottom: 20px;">
-            <label style="color: #ccc;">{{ form.password.label }}</label>
-            {{ form.password(style="width: 100%; padding: 8px; margin-top:5px; background: transparent; border: 1px solid var(--primary-neon); color: white;") }}
+        <div class="login-group">
+            <label class="login-label">{{ form.password.label }}</label>
+            {{ form.password(class="login-input") }}
             {% for error in form.password.errors %}
-                <span style="color: #ff4d4d; font-size: 0.8em;">[{{ error }}]</span>
+                <span class="login-error">[{{ error }}]</span>
             {% endfor %}
         </div>
 
-        <div style="margin-bottom: 10px; color: #ccc;">
-            {{ form.remember_me() }} {{ form.remember_me.label }}
+        <div class="remember-group">
+            {{ form.remember_me(id="remember_me", class="remember-checkbox") }}
+            <label for="remember_me" class="remember-label">Remember Me</label>
         </div>
 
-        {{ form.submit(style="width: 100%; background: var(--primary-neon); color: black; border: none; padding: 10px; font-weight: bold; cursor: pointer; text-transform: uppercase; letter-spacing: 2px;") }}
+        {{ form.submit(class="login-button") }}
     </form>
 
-    <p style="text-align: center; margin-top: 15px;">
-        <span style="color: #aaa;">New user?</span> 
-        <a href="{{ url_for('register') }}" style="color: var(--primary-neon); text-decoration: none;">Create Account</a>
+    <p class="login-footer">
+        <span class="login-footer-text">New user?</span> 
+        <a href="{{ url_for('register') }}" class="login-link">Create Account</a>
     </p>
 </div>
 {% endblock %}

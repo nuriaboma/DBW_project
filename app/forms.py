@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, BooleanField, SubmitField, IntegerField, SelectField
-from wtforms.validators import DataRequired, Email, EqualTo, ValidationError
+from wtforms import StringField, FloatField, PasswordField, BooleanField, SubmitField, IntegerField, SelectField
+from wtforms.validators import DataRequired, Email, EqualTo, ValidationError, Optional, NumberRange
 from app.models import User
 
 class LoginForm(FlaskForm):
@@ -20,21 +20,64 @@ class RegistrationForm(FlaskForm):
         if user is not None:
             raise ValidationError('Please use a different email address.')
 
-class SearchForm(FlaskForm):
-    # This is the main form for logged-in users
-    drug_name = StringField('Enter Medication Name(s)', validators=[DataRequired()])
-    
-    # Extra fields for the detailed analysis
-    age = IntegerField('Age')
-    gender = SelectField('Gender', choices=[
-        ('not_specified', 'Not Specified'), 
-        ('male', 'Male'), 
-        ('female', 'Female'), 
-        ('other', 'Other')
-    ])
-    condition = StringField('Existing Medical Conditions')
-    
-    submit = SubmitField('Search')
+
+class EntryForm(FlaskForm):
+
+    # --- MAIN DRUG INPUT ---
+    drug_name = StringField(
+        'Enter Medication Name(s)',
+        validators=[DataRequired(message="Please enter at least one medication")]
+    )
+
+    # --- USER INFO ---
+    age = IntegerField(
+        'Age',
+        validators=[
+            DataRequired(),
+            NumberRange(min=0, max=120, message="Enter a valid age")
+        ]
+    )
+
+    gender = SelectField(
+        'Gender',
+        choices=[
+            ('not_specified', 'Not specified'),
+            ('male', 'Male'),
+            ('female', 'Female'),
+            ('other', 'Other')
+        ],
+        default='not_specified'
+    )
+
+    condition = StringField(
+        'Medical Condition',
+        validators=[DataRequired()]
+    )
+
+    side_effects = StringField(
+        'Side Effects',
+        validators=[DataRequired()]
+    )
+
+    # --- OPTIONAL FUTURE FIELDS (match Entries table) ---
+    dose = FloatField(
+        'Dose (optional)',
+        validators=[Optional()]
+    )
+
+    duration = IntegerField(
+        'Duration days (optional)',
+        validators=[Optional()]
+    )
+    treatment_score = FloatField(
+        'Treatment Score',
+        validators=[
+            Optional(),
+            NumberRange(min=1, max=10, message="Score must be between 1 and 10")
+        ]
+    )
+    submit = SubmitField('Analyze & Save Profile')
+
 
 class SimpleSearchForm(FlaskForm):
     # This is the form for the public interaction checker
@@ -44,4 +87,8 @@ class SimpleSearchForm(FlaskForm):
 
 class ConditionSearchForm(FlaskForm):
     condition_name = StringField('Enter Medical Condition (e.g. Diabetes, Pain)', validators=[DataRequired()])
+    route_filter = SelectField(
+        'Dosage Form',
+        choices=[('', 'All')]  
+    )
     submit = SubmitField('Find Medications')

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="menu-hero">
+
+    <h1 class="menu-title">
+        RXInsight Menu
+    </h1>
+    
+    <p class="menu-subtitle">
+        Select a clinical tool to begin analysis
+    </p>
+
+    <!-- TOOL GRID -->
+    <div class="tool-grid">
+
+        <a href="{{ url_for('public_interactions') }}" class="tool-btn">
+            🔬 Interaction Checker
+        </a>
+
+        <a href="{{ url_for('public_side_effects') }}" class="tool-btn">
+            💊 Side Effect Explorer
+        </a>
+
+        <a href="{{ url_for('public_conditions') }}" class="tool-btn">
+            🩺 Conditions and Medications
+        </a>
+
+        <a href="{{ url_for('entry') }}" class="tool-btn">
+            🧠 Personal Analysis
+        </a>
+
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="interaction-container">
+
+    <!-- TOP GLOBAL MESSAGES -->
+    {% if success_message %}
+        <div class="success-box" style="margin-bottom: 20px;">
+            ✅ {{ success_message }}
+        </div>
+    {% elif error_message %}
+        <div class="interaction-empty" style="margin-bottom: 20px;">
+            ⚠️ {{ error_message }}
+        </div>
+    {% endif %}
+
+    <!-- HEADER -->
+    <div class="interaction-header">
+        <h1 class="interaction-title">Patient Medication Profile</h1>
+        <p class="interaction-subtitle">
+            Enter your information to analyze medication safety and store your profile.
+        </p>
+    </div>
+
+    <hr class="interaction-divider">
+
+    <!-- FORM -->
+    <form action="" method="post" novalidate>
+        {{ form.hidden_tag() }}
+
+        <!-- AGE + GENDER -->
+        <div class="interaction-row">
+
+            <div class="interaction-col">
+                <label class="interaction-label">Age</label>
+                {{ form.age(class="interaction-input", placeholder="e.g. 45") }}
+                {% for error in form.age.errors %}
+                    <span class="interaction-error">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+            <div class="interaction-col">
+                <label class="interaction-label">Gender</label>
+                {{ form.gender(class="interaction-input interaction-select") }}
+                {% for error in form.gender.errors %}
+                    <span class="interaction-error">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+        </div>
+
+        <!-- CONDITION -->
+        <div class="interaction-field">
+            <label class="interaction-label">Medical Condition</label>
+            {{ form.condition(class="interaction-input", placeholder="e.g. Diabetes, Asthma") }}
+            {% for error in form.condition.errors %}
+                <span class="interaction-error">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <!-- DRUGS -->
+        <div class="interaction-field">
+            <label class="interaction-label">
+                Medications (separate with commas)
+            </label>
+
+            {{ form.drug_name(
+                class="interaction-input interaction-drug-input",
+                placeholder="e.g. Aspirin, Metformin, Ibuprofen"
+            ) }}
+
+            {% for error in form.drug_name.errors %}
+                <span class="interaction-error">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <!-- SIDE EFFECTS -->
+        <div class="interaction-field">
+            <label class="interaction-label">Side Effects Experienced</label>
+            {{ form.side_effects(class="interaction-input", placeholder="e.g. Nausea, Headache") }}
+            {% for error in form.side_effects.errors %}
+                <span class="interaction-error">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <!-- OPTIONAL FIELDS -->
+        <div class="interaction-row">
+
+            <div class="interaction-col">
+                <label class="interaction-label">Dose in mg/ml (optional)</label>
+                {{ form.dose(class="interaction-input", placeholder="e.g. 20") }}
+                {% for error in form.dose.errors %}
+                    <span class="interaction-error">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+            <div class="interaction-col">
+                <label class="interaction-label">Duration days (optional)</label>
+                {{ form.duration(class="interaction-input", placeholder="e.g. 7") }}
+                {% for error in form.duration.errors %}
+                    <span class="interaction-error">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+            <div class="interaction-col">
+                <label class="interaction-label">Treatment Score (optional)</label>
+                {{ form.treatment_score(class="interaction-input", placeholder="e.g. 8.5") }}
+                {% for error in form.treatment_score.errors %}
+                    <span class="interaction-error">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+        </div>
+
+        <!-- SUBMIT -->
+        <div class="interaction-submit-wrapper">
+            {{ form.submit(class="interaction-submit") }}
+        </div>
+    </form>
+
+    <hr class="interaction-divider-large">
+
+</div>
+{% endblock %}

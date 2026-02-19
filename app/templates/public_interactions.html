@@ -1,78 +1,115 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container" style="max-width: 800px; margin: 0 auto; padding: 40px 20px;">
+<div class="quick-container">
     
-    <div style="text-align: center; margin-bottom: 40px;">
-        <h1 style="color: var(--primary-neon); text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 15px rgba(3, 233, 244, 0.5);">
+    {% if request.method == 'POST' and not drugs and not flash_messages %}
+        <div class="interaction-empty" style="margin-bottom: 20px;">
+            ⚠️ No medication found with the name:
+            <strong>{{ form.drug_name.data }}</strong>.
+        </div>
+    {% endif %}
+
+    <div class="quick-header">
+        <h1 class="quick-title">
             Quick Interaction Check
         </h1>
-        <p style="color: #aaa;">Check for dangerous drug combinations instantly. No login required.</p>
+        <p class="quick-subtitle">
+            Check for dangerous drug combinations instantly. No login required.
+        </p>
     </div>
 
-    <div style="background: rgba(255,255,255,0.02); padding: 30px; border-radius: 15px; border: 1px solid rgba(3, 233, 244, 0.3);">
+    <div class="quick-card">
         <form action="" method="post" novalidate>
             {{ form.hidden_tag() }} 
 
-            <div style="margin-bottom: 20px;">
-                <label style="color: var(--primary-neon); font-weight: bold; font-size: 1.1em; display: block; margin-bottom: 10px;">
+            <div class="form-group">
+                <label class="form-label">
                     Enter Medications (e.g. Aspirin, Warfarin)
                 </label>
                 {{ form.drug_name(
                     placeholder="Type drug names here...", 
-                    style="width: 100%; padding: 15px; background: rgba(0,0,0,0.3); border: 1px solid var(--primary-neon); color: white; border-radius: 8px; font-size: 18px;"
+                    class="form-input"
                 ) }}
             </div>
             
-            <div style="text-align: center;">
-                {{ form.submit(
-                    style="padding: 15px 60px; background: transparent; color: var(--primary-neon); font-weight: bold; border: 2px solid var(--primary-neon); cursor: pointer; border-radius: 50px; text-transform: uppercase; transition: 0.3s; font-size: 1.1em;"
-                ) }}
+            <div class="center">
+                {{ form.submit(class="quick-button") }}
             </div>
         </form>
     </div>
 
-    <hr style="border-color: var(--primary-neon); opacity: 0.3; margin: 50px 0;">
+    <hr class="neon-divider">
 
-    {% if interactions %}
-        <div style="background: rgba(255, 0, 0, 0.15); border: 2px solid #ff4d4d; padding: 25px; border-radius: 12px; margin-bottom: 40px; box-shadow: 0 0 20px rgba(255, 77, 77, 0.4); animation: fadeIn 0.5s ease-in;">
-            <h2 style="color: #ff4d4d; margin-top: 0; text-transform: uppercase; text-align: center;">
-                ⚠️ Warning: Interactions Found
-            </h2>
-            {% for inter in interactions %}
-                <div style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
-                    <div style="font-size: 1.4em; color: white; margin-bottom: 10px;">
-                        {{ inter.drug1_name }} <span style="color: #ff4d4d;">+</span> {{ inter.drug2_name }}
-                    </div>
-                    <!-- <p style="color: #eee; font-size: 1.1em;">{{ inter.description }}</p> -->
-                    {% if inter.severity %}
-                        <span style="background: #ff4d4d; color: black; padding: 4px 12px; border-radius: 4px; font-weight: bold;">
-                            SEVERITY: {{ inter.severity }}
-                        </span>
+    <!-- INTERACTIONS SECTION -->
+    {% if interactions_by_drug %}
+        {% for drug_name, interactions in interactions_by_drug.items() %}
+            <div class="drug-section">
+                <button class="accordion {% if interactions %}has-interactions{% else %}no-interactions{% endif %}">
+                    {{ drug_name }} Interactions
+                </button>
+                <div class="panel">
+                    {% if interactions %}
+                        <div class="warning-box">
+                            {% for inter in interactions %}
+                                <div class="interaction-item">
+                                    <div class="interaction-drugs">
+                                        {{ inter.drug1_name }} <span class="plus">+</span> {{ inter.drug2_name }}
+                                    </div>
+                                    {% if inter.severity %}
+                                        <span class="severity-badge">
+                                            SEVERITY: {{ inter.severity }}
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="success-box">
+                            <p>✅ No known interactions for {{ drug_name }}</p>
+                        </div>
                     {% endif %}
                 </div>
-            {% endfor %}
-        </div>
-    {% elif drugs and not interactions %}
-        <div style="text-align: center; padding: 30px; border: 1px solid #0f0; background: rgba(0, 255, 0, 0.05); border-radius: 12px;">
-            <h2 style="color: #0f0;">✅ No Interactions Found</h2>
-            <p style="color: #ddd;">Based on our database, no known interactions were found between:</p>
-            <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+            </div>
+        {% endfor %}
+
+    {% elif drugs and not interactions_by_drug %}
+        <div class="success-box">
+            <h2>✅ No Interactions Found</h2>
+            <p>Based on our database, no known interactions were found between:</p>
+            <div class="drug-tags">
                 {% for drug in drugs %}
-                    <span style="background: rgba(3, 233, 244, 0.1); color: var(--primary-neon); padding: 5px 15px; border-radius: 20px; border: 1px solid var(--primary-neon);">
-                        {{ drug.name }}
-                    </span>
+                    <span class="drug-tag">{{ drug.Name }}</span>
                 {% endfor %}
             </div>
         </div>
     {% endif %}
 
-    <div style="text-align: center; margin-top: 50px;">
-        <p style="color: #888;">Need a detailed analysis with side effects based on your age and gender?</p>
-        <a href="{{ url_for('login') }}" style="color: var(--secondary-neon); text-decoration: none; border-bottom: 1px dashed var(--secondary-neon);">
+    <!-- FOOTER -->
+    <div class="quick-footer">
+        <p>Need a detailed analysis with side effects based on your age and gender?</p>
+        <a href="{{ url_for('login') }}" class="login-link">
             Log in for Full Analysis
         </a>
     </div>
 
 </div>
+
+<!-- ACCORDION JS -->
+<script>
+    const acc = document.getElementsByClassName("accordion");
+    for (let i = 0; i < acc.length; i++) {
+        acc[i].addEventListener("click", function() {
+            this.classList.toggle("active");
+            const panel = this.nextElementSibling;
+            if (panel.style.maxHeight) {
+                panel.style.maxHeight = null;
+            } else {
+                panel.style.maxHeight = panel.scrollHeight + "px";
+            }
+        });
+    }
+</script>
+
+
 {% endblock %}

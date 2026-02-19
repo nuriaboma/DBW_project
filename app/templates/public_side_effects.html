@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="med-container">
+
+    {% if request.method == 'POST' and not effects and not flash_messages %}
+        <div class="interaction-empty" style="margin-bottom: 20px;">
+            ⚠️ No medication found with the name:
+            <strong>{{ form.drug_name.data }}</strong>.
+        </div>
+    {% endif %}
+
+    <div class="med-header">
+        <h1 class="med-title">Drug Side Effects Lookup</h1>
+        <p class="med-subtitle">Search for a medication to see its common side effects.</p>
+    </div>
+
+    <div class="med-form-card">
+        <form action="" method="post" novalidate>
+            {{ form.hidden_tag() }}
+
+            <div class="med-field">
+                <label class="med-label">Drug Name</label>
+                {{ form.drug_name(class="med-input", placeholder="e.g. Aspirin, Warfarin") }}
+            </div>
+
+            <div class="med-submit-wrapper">
+                {{ form.submit(class="med-submit") }}
+            </div>
+        </form>
+    </div>
+
+    <hr class="med-divider">
+
+    {% if effects %}
+        <h2 class="med-results-title">
+            Side effects found for:
+            <span class="med-highlight">"{{ form.drug_name.data.title() }}"</span>
+        </h2>
+
+
+        <div class="med-results-grid">
+            {% set show_limit = 5 %}
+            {% for se in effects[:show_limit] %}
+                <div class="drug-card">{{ se.Name }}</div>
+            {% endfor %}
+
+            {% if effects|length > show_limit %}
+                <div id="more-effects" style="display:none;">
+                    {% for se in effects[show_limit:] %}
+                        <div class="drug-card">{{ se.Name }}</div>
+                    {% endfor %}
+                </div>
+
+                <div style="text-align:center; margin-top:10px;">
+                    <button type="button" id="toggle-effects" class="med-submit">
+                        Show more side effects
+                    </button>
+                </div>
+
+                <script>
+                    document.getElementById('toggle-effects').addEventListener('click', function(){
+                        const more = document.getElementById('more-effects');
+                        if(more.style.display === 'none'){
+                            more.style.display = 'block';
+                            this.textContent = 'Show less side effects';
+                        } else {
+                            more.style.display = 'none';
+                            this.textContent = 'Show more side effects';
+                        }
+                    });
+                </script>
+            {% endif %}
+        </div>
+    {% endif %}
+
+    <div class="med-back">
+        <a href="{{ url_for('home') }}" class="med-back-link">
+            &larr; Back to Home
+        </a>
+    </div>
+
+</div>
+{% endblock %}

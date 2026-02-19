@@ -101,11 +101,24 @@ class Interaction(db.Model):
     drug1 = db.relationship("Drug", foreign_keys=[drug1_id])
     drug2 = db.relationship("Drug", foreign_keys=[drug2_id])
 
-class SearchHistory(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('Users.id'), nullable=False)
-    timestamp = db.Column(db.DateTime, index=True, default=lambda: datetime.now(timezone.utc))
-    medications = db.Column(db.String(500), nullable=False)
-    age = db.Column(db.Integer)
-    gender = db.Column(db.String(20))
-    condition = db.Column(db.String(200))
+
+class Entry(db.Model):
+    __tablename__ = 'Entries'
+    
+    idEntry = db.Column(db.Integer, primary_key=True)
+    Age = db.Column(db.Integer)
+    Gender = db.Column(db.String(10))
+    Dose = db.Column(db.Float)
+    DurationDays = db.Column(db.Integer)
+    ImprovementScore = db.Column(db.Float)
+    
+    Drugs_idDrug = db.Column(db.Integer, db.ForeignKey('Drugs.idDrug'))
+    Diseases_idDisease = db.Column(db.Integer, db.ForeignKey('Diseases.idDisease'))
+    SideEffects_idSideEffect = db.Column(db.Integer, db.ForeignKey('SideEffects.idSideEffect'))
+    Users_idUsers = db.Column(db.Integer, db.ForeignKey('Users.idUsers'))
+    
+    # Relationships
+    drug = db.relationship('Drug', backref='entries')
+    disease = db.relationship('Disease', backref='entries')
+    side_effect = db.relationship('SideEffect', backref='entries')
+    user = db.relationship('User', backref='entries')

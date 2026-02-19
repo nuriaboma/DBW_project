@@ -1,53 +1,89 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container" style="max-width: 800px; margin: 0 auto; padding: 40px 20px;">
-    
-    <div style="text-align: center; margin-bottom: 40px;">
-        <h1 style="color: var(--primary-neon); text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 15px rgba(3, 233, 244, 0.5);">
+<div class="med-container">
+
+    {% if drugs_for_condition %}
+        <div class="success-box" style="margin-bottom: 20px;">
+            ✅ Medications found for the condition:
+            <strong>{{ form.condition_name.data }}</strong>.
+        </div>
+    {% elif request.method == 'POST' and drugs_for_condition is none %}
+        <div class="interaction-empty" style="margin-bottom: 20px;">
+            ⚠️ No medications found for the condition:
+            <strong>{{ form.condition_name.data }}</strong>.
+        </div>
+    {% endif %}
+
+    <div class="med-header">
+        <h1 class="med-title">
             Find Medication
         </h1>
-        <p style="color: #aaa;">Enter a disease or condition to see available treatments.</p>
+        <p class="med-subtitle">
+            Enter a disease or condition to see available treatments.
+        </p>
     </div>
 
-    <div style="background: rgba(255,255,255,0.02); padding: 30px; border-radius: 15px; border: 1px solid rgba(3, 233, 244, 0.3);">
+    <div class="med-form-card">
         <form action="" method="post" novalidate>
             {{ form.hidden_tag() }} 
 
-            <div style="margin-bottom: 20px;">
-                <label style="color: var(--primary-neon); font-weight: bold; font-size: 1.1em; display: block; margin-bottom: 10px;">
-                    Medical Condition
-                </label>
-                {{ form.condition_name(
-                    placeholder="e.g. Hypertension, Diabetes, Headache...", 
-                    style="width: 100%; padding: 15px; background: rgba(0,0,0,0.3); border: 1px solid var(--primary-neon); color: white; border-radius: 8px; font-size: 18px;"
-                ) }}
+            <div class="med-field">
+                <label class="med-label">Medical Condition</label>
+                {{ form.condition_name(class="med-input", placeholder="e.g. Hypertension, Diabetes") }}
             </div>
-            
-            <div style="text-align: center;">
-                {{ form.submit(
-                    style="padding: 15px 60px; background: transparent; color: var(--primary-neon); font-weight: bold; border: 2px solid var(--primary-neon); cursor: pointer; border-radius: 50px; text-transform: uppercase; transition: 0.3s; font-size: 1.1em;"
-                ) }}
+
+            <div class="med-field">
+                <label class="med-label">Route</label>
+                {{ form.route_filter(class="med-input") }}
+                <small>Select a route to filter drugs, or "All" to see all.</small>
+            </div>
+
+            <div class="med-submit-wrapper">
+                {{ form.submit(class="med-submit") }}
             </div>
         </form>
     </div>
 
-    <hr style="border-color: var(--primary-neon); opacity: 0.3; margin: 50px 0;">
+    <hr class="med-divider">
 
     {% if drugs %}
-        <h2 style="color: white; margin-bottom: 20px; text-align: center;">
-            Treatments found for: <span style="color: var(--primary-neon);">"{{ form.condition_name.data }}"</span>
+        <h2 class="med-results-title">
+            Treatments found for:
+            <span class="med-highlight">"{{ form.condition_name.data }}"</span>
         </h2>
 
-        <div style="display: grid; gap: 20px;">
+        <div class="med-results-grid">
             {% for drug in drugs %}
-                <div style="background: rgba(10, 10, 10, 0.8); border: 1px solid #444; border-left: 4px solid var(--secondary-neon); padding: 20px; border-radius: 8px; transition: transform 0.2s;">
-                    <h3 style="color: var(--secondary-neon); margin-top: 0;">{{ drug.Name }}</h3>
-                    <p style="color: #ccc; margin-bottom: 5px;">
-                        <strong>Indication:</strong> {{ drug.disease }}
-                    </p>
-                    <div style="margin-top: 10px;">
-                        <a href="{{ url_for('public_interactions') }}" style="font-size: 0.85em; color: #888; text-decoration: none; border-bottom: 1px dashed #555;">
+                <div class="drug-card">
+                    <h3 class="drug-name">{{ drug.Name }}</h3>
+
+                    {% if drug.Brand %}
+                        <p><strong>Brand:</strong> {{ drug.Brand }}</p>
+                    {% endif %}
+
+                    {% if drug.DosageForm %}
+                        <p><strong>Dosage Form:</strong> {{ drug.DosageForm }}</p>
+                    {% endif %}
+
+                    {% if drug.Route %}
+                        <p><strong>Route:</strong> {{ drug.Route }}</p>
+                    {% endif %}
+
+                    {% if drug.PharmClass %}
+                        <p><strong>Pharmacological Class:</strong> {{ drug.PharmClass }}</p>
+                    {% endif %}
+
+                    {% if drug.top_indications %}
+                        <p><strong>Common Indications:</strong>
+                            {% for ind in drug.top_indications %}
+                                {{ ind }}{% if not loop.last %}, {% endif %}
+                            {% endfor %}
+                        </p>
+                    {% endif %}
+
+                    <div class="drug-link-wrapper">
+                        <a href="{{ url_for('public_interactions') }}" class="drug-link">
                             Check interactions for this drug &rarr;
                         </a>
                     </div>
@@ -55,14 +91,17 @@
             {% endfor %}
         </div>
 
-    {% elif request.method == 'POST' %}
-        <div style="text-align: center; color: #aaa; padding: 20px;">
-            <p>No medications found in our database for this condition.</p>
+    {% elif request.method == 'POST' and drugs_for_condition is not none and not drugs %}
+        <div class="interaction-empty">
+            ⚠️ No medications found for the selected route: 
+            <strong>{{ form.route_filter.data }}</strong>. Please try another.
         </div>
     {% endif %}
 
-    <div style="text-align: center; margin-top: 50px;">
-        <a href="{{ url_for('home') }}" style="color: #666; text-decoration: none;">&larr; Back to Home</a>
+    <div class="med-back">
+        <a href="{{ url_for('home') }}" class="med-back-link">
+            &larr; Back to Home
+        </a>
     </div>
 
 </div>
