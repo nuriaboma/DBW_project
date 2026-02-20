@@ -45,34 +45,138 @@
 
     <!-- INTERACTIONS SECTION -->
     {% if interactions_by_drug %}
+
+        <!-- FILTER BUTTONS -->
+        <div class="severity-filters" id="severity-filters">
+            <span class="filter-label">Show:</span>
+            <button class="filter-btn filter-major active"   data-target="severity-major"    onclick="toggleFilter(this)">🔴 Major</button>
+            <button class="filter-btn filter-moderate active" data-target="severity-moderate" onclick="toggleFilter(this)">🟠 Moderate</button>
+            <button class="filter-btn filter-minor active"   data-target="severity-minor"    onclick="toggleFilter(this)">🟢 Minor</button>
+            <button class="filter-btn filter-unknown active" data-target="severity-unknown"  onclick="toggleFilter(this)">⚪ Unknown</button>
+            <button class="filter-btn filter-all"            onclick="showAll()">All</button>
+        </div>
+
         {% for drug_name, interactions in interactions_by_drug.items() %}
+
+            {# Split interactions into severity buckets #}
+            {# Normalize severity — handles any case + common codes like X/D/C or 1/2/3 #}
+            {% set major    = [] %}
+            {% set moderate = [] %}
+            {% set minor    = [] %}
+            {% set unknown  = [] %}
+            {% for inter in interactions %}
+                {% set s = (inter.severity or "") | lower | trim %}
+                {% if s in ["major", "x", "severe", "high", "3", "contraindicated"] %}
+                    {% set _ = major.append(inter) %}
+                {% elif s in ["moderate", "d", "medium", "2", "significant"] %}
+                    {% set _ = moderate.append(inter) %}
+                {% elif s in ["minor", "c", "low", "1", "minimal", "mild"] %}
+                    {% set _ = minor.append(inter) %}
+                {% else %}
+                    {% set _ = unknown.append(inter) %}
+                {% endif %}
+            {% endfor %}
+
             <div class="drug-section">
-                <button class="accordion {% if interactions %}has-interactions{% else %}no-interactions{% endif %}">
-                    {{ drug_name }} Interactions
-                </button>
-                <div class="panel">
-                    {% if interactions %}
-                        <div class="warning-box">
-                            {% for inter in interactions %}
-                                <div class="interaction-item">
-                                    <div class="interaction-drugs">
-                                        {{ inter.drug1_name }} <span class="plus">+</span> {{ inter.drug2_name }}
-                                    </div>
-                                    {% if inter.severity %}
-                                        <span class="severity-badge">
-                                            SEVERITY: {{ inter.severity }}
-                                        </span>
-                                    {% endif %}
-                                </div>
-                            {% endfor %}
+                <h3 class="drug-section-title">{{ drug_name }} — Interactions</h3>
+
+                {% if not interactions %}
+                    <div class="success-box">
+                        <p>✅ No known interactions for {{ drug_name }}</p>
+                    </div>
+                {% else %}
+                    <div class="severity-grid">
+
+                        <!-- MAJOR -->
+                        <div class="severity-box severity-major">
+                            <div class="severity-box-header">
+                                <span class="severity-dot"></span>
+                                Major
+                                <span class="severity-count">{{ major | length }}</span>
+                            </div>
+                            <div class="severity-box-body">
+                                {% if major %}
+                                    {% for inter in major %}
+                                        <div class="severity-item">
+                                            <span class="sev-drug">{{ inter.drug1_name }}</span>
+                                            <span class="sev-plus">+</span>
+                                            <span class="sev-drug">{{ inter.drug2_name }}</span>
+                                        </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <p class="severity-none">No major interactions</p>
+                                {% endif %}
+                            </div>
                         </div>
-                    {% else %}
-                        <div class="success-box">
-                            <p>✅ No known interactions for {{ drug_name }}</p>
+
+                        <!-- MODERATE -->
+                        <div class="severity-box severity-moderate">
+                            <div class="severity-box-header">
+                                <span class="severity-dot"></span>
+                                Moderate
+                                <span class="severity-count">{{ moderate | length }}</span>
+                            </div>
+                            <div class="severity-box-body">
+                                {% if moderate %}
+                                    {% for inter in moderate %}
+                                        <div class="severity-item">
+                                            <span class="sev-drug">{{ inter.drug1_name }}</span>
+                                            <span class="sev-plus">+</span>
+                                            <span class="sev-drug">{{ inter.drug2_name }}</span>
+                                        </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <p class="severity-none">No moderate interactions</p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- MINOR -->
+                        <div class="severity-box severity-minor">
+                            <div class="severity-box-header">
+                                <span class="severity-dot"></span>
+                                Minor
+                                <span class="severity-count">{{ minor | length }}</span>
+                            </div>
+                            <div class="severity-box-body">
+                                {% if minor %}
+                                    {% for inter in minor %}
+                                        <div class="severity-item">
+                                            <span class="sev-drug">{{ inter.drug1_name }}</span>
+                                            <span class="sev-plus">+</span>
+                                            <span class="sev-drug">{{ inter.drug2_name }}</span>
+                                        </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <p class="severity-none">No minor interactions</p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                    </div>{# end severity-grid #}
+
+                    {% if unknown %}
+                        <div class="severity-box severity-unknown" style="margin-top: 15px;">
+                            <div class="severity-box-header">
+                                <span class="severity-dot"></span>
+                                Unknown Severity
+                                <span class="severity-count">{{ unknown | length }}</span>
+                            </div>
+                            <div class="severity-box-body">
+                                {% for inter in unknown %}
+                                    <div class="severity-item">
+                                        <span class="sev-drug">{{ inter.drug1_name }}</span>
+                                        <span class="sev-plus">+</span>
+                                        <span class="sev-drug">{{ inter.drug2_name }}</span>
+                                    </div>
+                                {% endfor %}
+                            </div>
                         </div>
                     {% endif %}
-                </div>
+
+                {% endif %}
             </div>
+
         {% endfor %}
 
     {% elif drugs and not interactions_by_drug %}
@@ -96,22 +200,6 @@
     </div>
 
 </div>
-
-<!-- ACCORDION JS -->
-<script>
-    const acc = document.getElementsByClassName("accordion");
-    for (let i = 0; i < acc.length; i++) {
-        acc[i].addEventListener("click", function() {
-            this.classList.toggle("active");
-            const panel = this.nextElementSibling;
-            if (panel.style.maxHeight) {
-                panel.style.maxHeight = null;
-            } else {
-                panel.style.maxHeight = panel.scrollHeight + "px";
-            }
-        });
-    }
-</script>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -183,4 +271,219 @@
     });
 </script>
 
+<style>
+    /* ── Severity grid ── */
+    .drug-section-title {
+        color: var(--primary-neon);
+        font-size: 1.1rem;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        margin: 30px 0 15px 0;
+        padding-bottom: 8px;
+        border-bottom: 1px solid rgba(3, 233, 244, 0.2);
+    }
+
+    .severity-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 10px;
+    }
+
+    .severity-box {
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid;
+    }
+
+    /* Major — Red */
+    .severity-major {
+        border-color: rgba(255, 77, 77, 0.5);
+        background: rgba(255, 77, 77, 0.06);
+    }
+    .severity-major .severity-box-header {
+        background: rgba(255, 77, 77, 0.25);
+        color: #ff4d4d;
+    }
+    .severity-major .severity-dot { background: #ff4d4d; }
+    .severity-major .sev-plus { color: #ff4d4d; }
+
+    /* Moderate — Orange */
+    .severity-moderate {
+        border-color: rgba(245, 158, 11, 0.5);
+        background: rgba(245, 158, 11, 0.06);
+    }
+    .severity-moderate .severity-box-header {
+        background: rgba(245, 158, 11, 0.25);
+        color: #f59e0b;
+    }
+    .severity-moderate .severity-dot { background: #f59e0b; }
+    .severity-moderate .sev-plus { color: #f59e0b; }
+
+    /* Minor — Green */
+    .severity-minor {
+        border-color: rgba(52, 211, 153, 0.5);
+        background: rgba(52, 211, 153, 0.06);
+    }
+    .severity-minor .severity-box-header {
+        background: rgba(52, 211, 153, 0.25);
+        color: #34d399;
+    }
+    .severity-minor .severity-dot { background: #34d399; }
+    .severity-minor .sev-plus { color: #34d399; }
+
+    /* Unknown — Grey */
+    .severity-unknown {
+        border-color: rgba(150, 150, 150, 0.4);
+        background: rgba(150, 150, 150, 0.05);
+    }
+    .severity-unknown .severity-box-header {
+        background: rgba(150, 150, 150, 0.15);
+        color: #aaa;
+    }
+    .severity-unknown .severity-dot { background: #aaa; }
+    .severity-unknown .sev-plus { color: #aaa; }
+
+    /* Shared header */
+    .severity-box-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 16px;
+        font-weight: bold;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+    }
+
+    .severity-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    .severity-count {
+        margin-left: auto;
+        background: rgba(0,0,0,0.3);
+        color: #fff;
+        font-size: 0.75rem;
+        padding: 2px 8px;
+        border-radius: 20px;
+        font-weight: bold;
+    }
+
+    /* Body */
+    .severity-box-body {
+        padding: 12px 16px;
+        min-height: 60px;
+    }
+
+    .severity-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 0;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+        flex-wrap: wrap;
+    }
+    .severity-item:last-child { border-bottom: none; }
+
+    .sev-drug {
+        color: #fff;
+        font-size: 0.88rem;
+        font-weight: 500;
+    }
+
+    .sev-plus {
+        font-weight: bold;
+        font-size: 1rem;
+    }
+
+    .severity-none {
+        color: #555;
+        font-size: 0.85rem;
+        text-align: center;
+        margin: 10px 0;
+        font-style: italic;
+    }
+
+    /* Responsive */
+    @media (max-width: 650px) {
+        .severity-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+<style>
+    /* ── Filter buttons ── */
+    .severity-filters {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin: 20px 0 28px 0;
+    }
+    .filter-label {
+        color: #666;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        margin-right: 4px;
+    }
+    .filter-btn {
+        padding: 7px 16px;
+        border-radius: 20px;
+        border: 1px solid;
+        background: transparent;
+        cursor: pointer;
+        font-size: 0.82rem;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        transition: all 0.2s;
+        width: auto;
+        display: inline-block;
+    }
+    /* Per-colour variants */
+    .filter-major    { border-color: #ff4d4d; color: #ff4d4d; }
+    .filter-moderate { border-color: #f59e0b; color: #f59e0b; }
+    .filter-minor    { border-color: #34d399; color: #34d399; }
+    .filter-unknown  { border-color: #888;    color: #888;    }
+    .filter-all      { border-color: var(--primary-neon); color: var(--primary-neon); }
+
+    /* Active = filled */
+    .filter-major.active    { background: rgba(255,77,77,0.2); }
+    .filter-moderate.active { background: rgba(245,158,11,0.2); }
+    .filter-minor.active    { background: rgba(52,211,153,0.2); }
+    .filter-unknown.active  { background: rgba(150,150,150,0.15); }
+
+    /* Inactive = dimmed */
+    .filter-btn:not(.active):not(.filter-all) {
+        opacity: 0.35;
+    }
+
+    /* Hide boxes when filtered out */
+    .severity-box.hidden { display: none; }
+</style>
+
+<script>
+    function toggleFilter(btn) {
+        btn.classList.toggle('active');
+        var target = btn.getAttribute('data-target');
+        var boxes  = document.querySelectorAll('.' + target);
+        boxes.forEach(function(box) {
+            box.classList.toggle('hidden', !btn.classList.contains('active'));
+        });
+    }
+
+    function showAll() {
+        // Activate all filter buttons and show all boxes
+        document.querySelectorAll('.filter-btn[data-target]').forEach(function(btn) {
+            btn.classList.add('active');
+            var boxes = document.querySelectorAll('.' + btn.getAttribute('data-target'));
+            boxes.forEach(function(box) { box.classList.remove('hidden'); });
+        });
+    }
+</script>
 {% endblock %}
