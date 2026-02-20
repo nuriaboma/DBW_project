@@ -111,6 +111,7 @@ class Entry(db.Model):
     Dose = db.Column(db.Float)
     DurationDays = db.Column(db.Integer)
     ImprovementScore = db.Column(db.Float)
+    Date = db.Column(db.DateTime, index=True, default=lambda: datetime.now(timezone.utc))
     
     Drugs_idDrug = db.Column(db.Integer, db.ForeignKey('Drugs.idDrug'))
     Diseases_idDisease = db.Column(db.Integer, db.ForeignKey('Diseases.idDisease'))

@@ -484,7 +484,7 @@ def stats():
         day = today - timedelta(days=i)
 
         count = user_entries_query.filter(
-            func.date(Entry.idEntry) == day   # If you have a timestamp, use that instead
+            func.date(Entry.Date) == day   
         ).count()
 
         labels.append(day.strftime('%b %d'))
