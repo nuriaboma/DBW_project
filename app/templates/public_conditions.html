@@ -85,9 +85,8 @@
                     {% endif %}
 
                     <div class="drug-link-wrapper">
-                        <a href="{{ url_for('public_interactions') }}" class="drug-link">
-                            Check interactions for this drug &rarr;
-                        </a>
+                        <a href="{{ url_for('public_interactions', prefill_drug=drug.Name) }}" class="btn btn-info">
+                        Check interactions for this drug</a>
                     </div>
                 </div>
             {% endfor %}

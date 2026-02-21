@@ -4,7 +4,7 @@ from sqlalchemy import and_, or_, func, desc
 from sqlalchemy.orm import joinedload
 
 from app import app, db
-from app.forms import LoginForm, RegistrationForm, EntryForm, SimpleSearchForm, ConditionSearchForm
+from app.forms import LoginForm, RegistrationForm, EntryForm, SimpleSearchForm, ConditionSearchForm, SideEffectsSearchForm
 from app.models import User, Drug, Disease, Interaction, Entry, SideEffect
 from datetime import datetime, timedelta
 import re
@@ -36,11 +36,22 @@ def tool():
 @app.route('/interactions', methods=['GET', 'POST'])
 def public_interactions():
     form = SimpleSearchForm()
+    
     found_drugs = []
     interactions_by_drug = {}  
+    query = ""
 
     if form.validate_on_submit():
+        # Case A: User typed something into the form and clicked submit
         query = form.drug_name.data or ""
+        
+    elif request.method == 'GET' and request.args.get('prefill_drug'):
+        # Case B: User arrived via the link from the Condition Tool
+        query = request.args.get('prefill_drug')
+        form.drug_name.data = query  # Automatically populate the search field
+
+    # 3. If we have a query (regardless of the source), start the search!
+    if query:
         drug_names = [d.strip() for d in query.replace(',', ' ').split() if d.strip()]
 
         # FIND DRUGS
@@ -55,7 +66,6 @@ def public_interactions():
             if drug:
                 drug.Name = drug.Name.title()
                 found_drugs.append(drug)
-
 
         # FIND INTERACTIONS 
         for drug in found_drugs:
@@ -81,8 +91,6 @@ def public_interactions():
         drugs=found_drugs,
         interactions_by_drug=interactions_by_drug  
     )
-
-
 # =====================================================
 # CONDITION SEARCH
 # =====================================================
@@ -190,7 +198,7 @@ SIDE_EFFECTS_BLACKLIST = [
 
 @app.route('/sideeffects', methods=['GET','POST'])
 def public_side_effects():
-    form = SimpleSearchForm()
+    form = SideEffectsSearchForm()
     effects = []
 
     if form.validate_on_submit():

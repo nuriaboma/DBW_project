@@ -80,9 +80,9 @@ class EntryForm(FlaskForm):
 
 
 class SimpleSearchForm(FlaskForm):
-    # This is the form for the public interaction checker
+    # This is the form for the public interaction tool
     drug_name = StringField('Enter Medications', validators=[DataRequired()])
-    submit = SubmitField('Check Interactions')
+    submit = SubmitField('Search for Interactions')
 
 
 class ConditionSearchForm(FlaskForm):
@@ -92,3 +92,8 @@ class ConditionSearchForm(FlaskForm):
         choices=[('', 'All')]  
     )
     submit = SubmitField('Find Medications')
+
+class SideEffectsSearchForm(FlaskForm):
+    # This is the form specifically for the Side Effects tool
+    drug_name = StringField('Enter Medication', validators=[DataRequired()])
+    submit = SubmitField('Search Side Effects')
