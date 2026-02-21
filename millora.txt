@@ -1,0 +1,4 @@
+change link url to start with rxinsight.
+
+the database has to have authentification
+
