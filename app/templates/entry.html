@@ -50,34 +50,37 @@
         </div>
 
         <!-- CONDITION -->
-        <div class="interaction-field">
+        <div class="interaction-field" style="position: relative;">
             <label class="interaction-label">Medical Condition</label>
-            {{ form.condition(class="interaction-input", placeholder="e.g. Diabetes, Asthma") }}
+            {{ form.condition(id="condition_input", class="interaction-input", placeholder="e.g. Diabetes, Asthma", autocomplete="off") }}
+            <ul id="condition-ac-list" class="autocomplete-list"></ul>
             {% for error in form.condition.errors %}
                 <span class="interaction-error">{{ error }}</span>
             {% endfor %}
         </div>
 
         <!-- DRUGS -->
-        <div class="interaction-field">
+        <div class="interaction-field" style="position: relative;">
             <label class="interaction-label">
                 Medications (separate with commas)
             </label>
-
             {{ form.drug_name(
+                id="drug_name_input",
                 class="interaction-input interaction-drug-input",
-                placeholder="e.g. Aspirin, Metformin, Ibuprofen"
+                placeholder="e.g. Aspirin, Metformin, Ibuprofen",
+                autocomplete="off"
             ) }}
-
+            <ul id="drug-ac-list" class="autocomplete-list"></ul>
             {% for error in form.drug_name.errors %}
                 <span class="interaction-error">{{ error }}</span>
             {% endfor %}
         </div>
 
         <!-- SIDE EFFECTS -->
-        <div class="interaction-field">
+        <div class="interaction-field" style="position: relative;">
             <label class="interaction-label">Side Effects Experienced</label>
-            {{ form.side_effects(class="interaction-input", placeholder="e.g. Nausea, Headache") }}
+            {{ form.side_effects(id="side_effects_input", class="interaction-input", placeholder="e.g. Nausea, Headache", autocomplete="off") }}
+            <ul id="se-ac-list" class="autocomplete-list"></ul>
             {% for error in form.side_effects.errors %}
                 <span class="interaction-error">{{ error }}</span>
             {% endfor %}
@@ -121,4 +124,87 @@
     <hr class="interaction-divider-large">
 
 </div>
+
+<script>
+    // ── Generic autocomplete builder ─────────────────────────────
+    function makeAutocomplete(inputId, listId, apiUrl, multiValue) {
+        var input = document.getElementById(inputId);
+        var list  = document.getElementById(listId);
+        if (!input || !list) return;
+        var timer;
+
+        input.addEventListener('input', function() {
+            clearTimeout(timer);
+            // For multi-value fields (drugs), autocomplete the last token
+            var raw   = this.value;
+            var query = multiValue ? raw.split(/[,]+/).pop().trim() : raw.trim();
+
+            if (query.length < 2) { list.style.display = 'none'; return; }
+
+            timer = setTimeout(function() {
+                fetch(apiUrl + encodeURIComponent(query))
+                    .then(function(r) { return r.json(); })
+                    .then(function(suggestions) {
+                        list.innerHTML = '';
+                        if (!suggestions.length) { list.style.display = 'none'; return; }
+                        suggestions.forEach(function(name) {
+                            var li = document.createElement('li');
+                            li.textContent = name;
+                            li.style.cssText = 'padding: 11px 16px; cursor: pointer; color: #fff; font-size: 0.95em; border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.15s;';
+                            li.addEventListener('mouseenter', function() { this.style.background = 'rgba(3,233,244,0.12)'; this.style.color = '#03e9f4'; });
+                            li.addEventListener('mouseleave', function() { this.style.background = 'transparent'; this.style.color = '#fff'; });
+                            li.addEventListener('mousedown', function(e) {
+                                e.preventDefault();
+                                if (multiValue) {
+                                    var parts = input.value.split(/,/);
+                                    parts[parts.length - 1] = ' ' + name;
+                                    input.value = parts.join(',').replace(/^,\s*/, '') + ', ';
+                                } else {
+                                    input.value = name;
+                                }
+                                list.style.display = 'none';
+                                input.focus();
+                            });
+                            list.appendChild(li);
+                        });
+                        list.style.display = 'block';
+                    });
+            }, 200);
+        });
+
+        document.addEventListener('click', function(e) {
+            if (e.target !== input) list.style.display = 'none';
+        });
+
+        input.addEventListener('keydown', function(e) {
+            var items  = list.querySelectorAll('li');
+            var active = list.querySelector('li.active');
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                var next = active ? active.nextElementSibling : items[0];
+                if (active) { active.classList.remove('active'); active.style.background = 'transparent'; active.style.color = '#fff'; }
+                if (next)   { next.classList.add('active'); next.style.background = 'rgba(3,233,244,0.12)'; next.style.color = '#03e9f4'; }
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                var prev = active ? active.previousElementSibling : items[items.length - 1];
+                if (active) { active.classList.remove('active'); active.style.background = 'transparent'; active.style.color = '#fff'; }
+                if (prev)   { prev.classList.add('active'); prev.style.background = 'rgba(3,233,244,0.12)'; prev.style.color = '#03e9f4'; }
+            } else if (e.key === 'Enter' && active) {
+                e.preventDefault();
+                active.dispatchEvent(new MouseEvent('mousedown'));
+            } else if (e.key === 'Escape') {
+                list.style.display = 'none';
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Condition — single value
+        makeAutocomplete('condition_input',    'condition-ac-list', '/api/conditions?q=', false);
+        // Medications — comma-separated multi value
+        makeAutocomplete('drug_name_input',    'drug-ac-list',      '/api/drugs?q=',      true);
+        // Side effects — single value
+        makeAutocomplete('side_effects_input', 'se-ac-list',        '/api/sideeffects?q=', false);
+    });
+</script>
 {% endblock %}

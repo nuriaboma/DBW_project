@@ -11,7 +11,7 @@ mysql>>> CREATE DATABASE rxinsight;
 
 
 Terminal 2:
-mysql -h 127.0.0.1 -P 3307 -u root -p rxinsight < ./db/rxinsight.sql
+docker exec -i dbw_project-db-1 mysql -u root -p'root' rxinsight < ./db/rxinsight.sql
 
 
 Now the sql tables are created.

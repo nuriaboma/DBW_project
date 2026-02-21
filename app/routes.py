@@ -198,20 +198,56 @@ SIDE_EFFECTS_BLACKLIST = [
 
 @app.route('/sideeffects', methods=['GET','POST'])
 def public_side_effects():
-    form = SideEffectsSearchForm()
+    form = SideEffectsSearchForm() # Your preferred form name
     effects = []
+    top_effects = []   # Add this to prevent crashes
+    total_reports = 0  # Add this to prevent crashes
 
     if form.validate_on_submit():
         query = form.drug_name.data or ""
         drug = Drug.query.filter(Drug.Name.ilike(f"%{query}%")).first()
 
         if drug:
-            SIDE_EFFECTS_BLACKLIST = [
-                "Wrong technique in product usage process"
-            ]
-            filtered = [se for se in drug.side_effects if se.Name not in SIDE_EFFECTS_BLACKLIST]
-            filtered.sort(key=lambda x: x.Name)
-            effects = filtered
+            SIDE_EFFECTS_BLACKLIST = ["Wrong technique in product usage process"]
+
+            # Count how many entries in the Entry table reported each side effect for this drug
+            from sqlalchemy import func
+            freq_rows = (
+                db.session.query(SideEffect, func.count(Entry.idEntry).label('cnt'))
+                .join(Entry, Entry.SideEffects_idSideEffect == SideEffect.idSideEffect)
+                .filter(Entry.Drugs_idDrug == drug.idDrug)
+                .filter(SideEffect.Name.notin_(SIDE_EFFECTS_BLACKLIST))
+                .group_by(SideEffect.idSideEffect)
+                .order_by(func.count(Entry.idEntry).desc())
+                .all()
+            )
+
+            # Build frequency map
+            freq_map = {se.idSideEffect: cnt for se, cnt in freq_rows}
+            total_reports = sum(freq_map.values())
+
+            # All side effects for this drug (alphabetical), excluding blacklist
+            all_effects = sorted(
+                [se for se in drug.side_effects if se.Name not in SIDE_EFFECTS_BLACKLIST],
+                key=lambda x: x.Name
+            )
+
+            # Top 5 — prefer those with known frequency, fill from alphabetical if needed
+            seen_ids = set()
+            top_effects = []
+            # First add frequency-ranked ones
+            for se, cnt in freq_rows[:5]:
+                top_effects.append({'name': se.Name, 'count': cnt})
+                seen_ids.add(se.idSideEffect)
+            # Fill up to 5 if fewer than 5 had entries
+            for se in all_effects:
+                if len(top_effects) >= 5:
+                    break
+                if se.idSideEffect not in seen_ids:
+                    top_effects.append({'name': se.Name, 'count': 0})
+                    seen_ids.add(se.idSideEffect)
+
+            effects = all_effects
         else:
             effects = None
 
@@ -219,6 +255,8 @@ def public_side_effects():
         'public_side_effects.html',
         form=form,
         effects=effects,
+        top_effects=top_effects,
+        total_reports=total_reports,
     )
 
 
@@ -767,3 +805,20 @@ def api_conditions():
     )
 
     return jsonify([d.Name for d in results if d.Name])
+
+
+@app.route('/api/sideeffects')
+def api_sideeffects():
+    q = request.args.get('q', '').strip()
+    if len(q) < 2:
+        return jsonify([])
+
+    results = (
+        SideEffect.query
+        .filter(SideEffect.Name.ilike(f'%{q}%'))
+        .order_by(SideEffect.Name)
+        .limit(8)
+        .all()
+    )
+
+    return jsonify([s.Name for s in results if s.Name])

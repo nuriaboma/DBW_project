@@ -74,21 +74,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 6. Set up the database
-
-```bash
-python setup_db.py
-```
-
-If you have CSV data files to import, also run:
-
-```bash
-python import_data.py
-```
-
-> ⚠️ If you get an error about the `user` table, run `python fix_table.py` first, then re-run `setup_db.py`.
-
-### 7. Run the application
+### 6. Run the application
 
 ```bash
 python run.py

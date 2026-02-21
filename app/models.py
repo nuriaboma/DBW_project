@@ -39,8 +39,8 @@ class User(UserMixin, db.Model):
         return str(self.iduser)
 
     def set_password(self, password_input):
-        self.password = generate_password_hash(password_input)
-        
+        self.password = generate_password_hash(password_input, method='pbkdf2:sha256')
+    
     def check_password(self, password_input):
         return check_password_hash(self.password, password_input)
 

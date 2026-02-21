@@ -41,39 +41,60 @@
         </h2>
 
 
-        <div class="med-results-grid">
-            {% set show_limit = 5 %}
-            {% for se in effects[:show_limit] %}
-                <div class="drug-card">{{ se.Name }}</div>
-            {% endfor %}
-
-            {% if effects|length > show_limit %}
-                <div id="more-effects" style="display:none;">
-                    {% for se in effects[show_limit:] %}
-                        <div class="drug-card">{{ se.Name }}</div>
-                    {% endfor %}
-                </div>
-
-                <div style="text-align:center; margin-top:10px;">
-                    <button type="button" id="toggle-effects" class="med-submit">
-                        Show more side effects
-                    </button>
-                </div>
-
-                <script>
-                    document.getElementById('toggle-effects').addEventListener('click', function(){
-                        const more = document.getElementById('more-effects');
-                        if(more.style.display === 'none'){
-                            more.style.display = 'block';
-                            this.textContent = 'Show less side effects';
-                        } else {
-                            more.style.display = 'none';
-                            this.textContent = 'Show more side effects';
-                        }
-                    });
-                </script>
+        {# ── TOP 5 MOST FREQUENT ── #}
+        {% if top_effects %}
+        <div class="se-section-label">
+            Most reported by patients
+            {% if total_reports > 0 %}
+                <span class="se-total-badge">{{ total_reports }} total reports</span>
             {% endif %}
         </div>
+        <div class="se-top-grid">
+            {% for se in top_effects %}
+            <div class="se-top-card">
+                <span class="se-rank">#{{ loop.index }}</span>
+                <span class="se-name">{{ se.name }}</span>
+                {% if se.count > 0 %}
+                    <span class="se-count-badge">{{ se.count }}</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {# ── EXPAND ALL ── #}
+        {% if effects|length > 5 %}
+        <div class="se-expand-wrapper">
+            <button type="button" class="se-expand-btn" id="expand-btn" onclick="toggleAll()">
+                <span id="expand-icon">&#9660;</span>
+                View all {{ effects|length }} side effects
+            </button>
+        </div>
+
+        <div id="all-effects" class="se-all-grid" style="display:none;">
+            {% for se in effects %}
+                <div class="se-all-item">{{ se.Name }}</div>
+            {% endfor %}
+        </div>
+
+        <script>
+            function toggleAll() {
+                var box  = document.getElementById('all-effects');
+                var btn  = document.getElementById('expand-btn');
+                var icon = document.getElementById('expand-icon');
+                if (box.style.display === 'none') {
+                    box.style.display = 'grid';
+                    icon.innerHTML = '&#9650;';
+                    btn.innerHTML = '<span id="expand-icon">&#9650;</span> Hide side effects';
+                } else {
+                    box.style.display = 'none';
+                    icon.innerHTML = '&#9660;';
+                    btn.innerHTML = '<span id="expand-icon">&#9660;</span> View all {{ effects|length }} side effects';
+                }
+            }
+        </script>
+        {% endif %}
+
     {% endif %}
 
     <div class="med-back">
@@ -100,7 +121,7 @@
             if (query.length < 2) { list.style.display = 'none'; return; }
 
             debounceTimer = setTimeout(function() {
-                fetch('/api/conditions?q=' + encodeURIComponent(query))
+                fetch('/api/drugs?q=' + encodeURIComponent(query))
                     .then(function(r) { return r.json(); })
                     .then(function(suggestions) {
                         list.innerHTML = '';
@@ -151,4 +172,118 @@
         });
     });
 </script>
+<style>
+    /* ── Section label ── */
+    .se-section-label {
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: #666;
+        margin: 30px 0 14px 0;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .se-total-badge {
+        background: rgba(3,233,244,0.1);
+        border: 1px solid rgba(3,233,244,0.3);
+        color: var(--primary-neon);
+        font-size: 0.72rem;
+        padding: 2px 10px;
+        border-radius: 20px;
+        letter-spacing: 1px;
+    }
+
+    /* ── Top 5 cards ── */
+    .se-top-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 28px;
+    }
+    .se-top-card {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        background: rgba(3,233,244,0.04);
+        border: 1px solid rgba(3,233,244,0.15);
+        border-left: 4px solid var(--primary-neon);
+        border-radius: 8px;
+        padding: 14px 18px;
+        transition: background 0.2s;
+    }
+    .se-top-card:hover {
+        background: rgba(3,233,244,0.09);
+    }
+    .se-rank {
+        color: var(--primary-neon);
+        font-weight: 900;
+        font-size: 1rem;
+        min-width: 28px;
+    }
+    .se-name {
+        color: #fff;
+        font-size: 0.97rem;
+        flex: 1;
+    }
+    .se-count-badge {
+        background: rgba(3,233,244,0.15);
+        color: var(--primary-neon);
+        font-size: 0.78rem;
+        font-weight: bold;
+        padding: 3px 10px;
+        border-radius: 20px;
+        border: 1px solid rgba(3,233,244,0.3);
+        white-space: nowrap;
+    }
+    .se-count-badge::before { content: "×"; margin-right: 3px; }
+
+    /* ── Expand button ── */
+    .se-expand-wrapper {
+        text-align: center;
+        margin: 10px 0 20px 0;
+    }
+    .se-expand-btn {
+        background: transparent;
+        border: 1px dashed rgba(3,233,244,0.4);
+        color: var(--primary-neon);
+        padding: 10px 28px;
+        border-radius: 30px;
+        cursor: pointer;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        transition: all 0.2s;
+        width: auto;
+    }
+    .se-expand-btn:hover {
+        background: rgba(3,233,244,0.08);
+        border-style: solid;
+    }
+
+    /* ── Full list grid ── */
+    .se-all-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 8px;
+        margin-top: 16px;
+        padding: 20px;
+        background: rgba(0,0,0,0.3);
+        border: 1px solid rgba(255,255,255,0.05);
+        border-radius: 12px;
+    }
+    .se-all-item {
+        color: #bbb;
+        font-size: 0.88rem;
+        padding: 7px 12px;
+        border-radius: 6px;
+        background: rgba(255,255,255,0.03);
+        border-left: 2px solid rgba(3,233,244,0.2);
+        transition: background 0.15s;
+    }
+    .se-all-item:hover {
+        background: rgba(255,255,255,0.07);
+        color: #fff;
+    }
+</style>
 {% endblock %}
