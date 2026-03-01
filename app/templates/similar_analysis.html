@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="similar-container">
+
+    <!-- HEADER -->
+    <div class="similar-header">
+        <h1 class="similar-title">Patients Similar to You</h1>
+        <p class="similar-subtitle">
+            Gender: <strong>{{ gender }}</strong> |
+            Age range: <strong>{{ age-10 }}-{{ age+10 }}</strong>
+            {% if disease_name %}
+                | Condition: <strong>{{ disease_name }}</strong>
+            {% endif %}
+        </p>
+    </div>
+
+    <!-- SUMMARY CARD -->
+    <div class="similar-summary-card">
+        <div class="summary-number">{{ total_similar }}</div>
+        <div class="summary-label">Matching patient profiles found</div>
+
+        {% if total_similar < 5 %}
+            <div class="summary-warning">
+                Limited data — results may not be representative.
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- GRID -->
+    <div class="similar-grid">
+
+        <!-- Top Drugs -->
+        <div class="similar-card">
+            <h3 class="similar-card-title">Most Used Medications</h3>
+
+            {% if top_drugs %}
+                <canvas id="drugsChart" height="220"></canvas>
+            {% else %}
+                <p class="similar-empty">No medication data available.</p>
+            {% endif %}
+        </div>
+
+        <!-- Side Effects -->
+        <div class="similar-card">
+            <h3 class="similar-card-title">Most Reported Side Effects</h3>
+
+            {% if top_side_effects %}
+                <canvas id="effectsChart" height="220"></canvas>
+            {% else %}
+                <p class="similar-empty">No side effect data available.</p>
+            {% endif %}
+        </div>
+
+    </div>
+
+    <!-- OUTCOME -->
+    <div class="similar-outcome-card">
+        <h3 class="similar-card-title">Treatment Outcome</h3>
+
+        {% if avg_score %}
+            <div class="outcome-score">{{ avg_score }} / 10</div>
+            <div class="outcome-label">Average improvement score</div>
+        {% else %}
+            <p class="similar-empty">No outcome data available.</p>
+        {% endif %}
+    </div>
+
+    <!-- BACK -->
+    <div class="similar-back">
+        <a href="{{ url_for('entry') }}" class="similar-back-link">
+            ← Back to Profile
+        </a>
+    </div>
+
+</div>
+
+
+<!-- Chart.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+<script>
+const NEON = '#03e9f4';
+const GRID = 'rgba(255,255,255,0.05)';
+
+Chart.defaults.color = '#aaa';
+Chart.defaults.font.family = "'Segoe UI', sans-serif";
+
+{% if top_drugs %}
+new Chart(document.getElementById('drugsChart'), {
+    type: 'bar',
+    data: {
+        labels: {{ top_drugs | map(attribute=0) | list | tojson }},
+        datasets: [{
+            data: {{ top_drugs | map(attribute=1) | list | tojson }},
+            backgroundColor: 'rgba(3,233,244,0.7)',
+            borderRadius: 6
+        }]
+    },
+    options: {
+        plugins: { legend: { display: false } },
+        scales: {
+            x: { grid: { color: GRID } },
+            y: { grid: { color: GRID }, beginAtZero: true }
+        }
+    }
+});
+{% endif %}
+
+{% if top_side_effects %}
+new Chart(document.getElementById('effectsChart'), {
+    type: 'bar',
+    data: {
+        labels: {{ top_side_effects | map(attribute=0) | list | tojson }},
+        datasets: [{
+            data: {{ top_side_effects | map(attribute=1) | list | tojson }},
+            backgroundColor: 'rgba(255,77,77,0.7)',
+            borderRadius: 6
+        }]
+    },
+    options: {
+        plugins: { legend: { display: false } },
+        scales: {
+            x: { grid: { color: GRID } },
+            y: { grid: { color: GRID }, beginAtZero: true }
+        }
+    }
+});
+{% endif %}
+</script>
+
+{% endblock %}

@@ -62,7 +62,7 @@
         <!-- DRUGS -->
         <div class="interaction-field" style="position: relative;">
             <label class="interaction-label">
-                Medications (separate with commas)
+                Medication 
             </label>
             {{ form.drug_name(
                 id="drug_name_input",
@@ -122,6 +122,24 @@
     </form>
 
     <hr class="interaction-divider-large">
+
+    {% if show_analysis_buttons %}
+    <div class="analysis-actions">
+        <a href="{{ url_for('similar_analysis',
+                            age=last_profile.Age,
+                            gender=last_profile.Gender,
+                            disease_id=last_profile.Diseases_idDisease) }}"
+        class="analysis-button">
+            View Similar Profiles
+        </a>
+
+        <a href="{{ url_for('export_pdf', entry_id=last_profile.idEntry) }}"
+        class="analysis-button secondary pdf-button">
+            Download My Report (PDF)
+            <span class="pdf-subtitle">Includes interactions & side effects analysis</span>
+        </a>
+    </div>
+    {% endif %}
 
 </div>
 

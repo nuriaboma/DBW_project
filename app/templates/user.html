@@ -3,6 +3,20 @@
 
 <div class="dashboard-container">
 
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+        {% if category == 'success' %}
+        <div class="success-box" style="margin-bottom: 20px;">
+            ✅ {{ message }}
+        </div>
+        {% elif category == 'error' %}
+        <div class="interaction-empty" style="margin-bottom: 20px;">
+            ⚠️ {{ message }}
+        </div>
+        {% endif %}
+    {% endfor %}
+    {% endwith %}
+        
     <!-- HEADER -->
     <div class="dashboard-header">
         <h1 class="dashboard-title">Welcome, {{ user.email }}</h1>
@@ -22,34 +36,44 @@
 
     {% if entries and entries|length > 0 %}
         <div class="dashboard-grid">
-            {% for entry in entries %}
-            <div class="entry-card">
-                
-                <div class="entry-card-header">
-                    <h3 class="entry-drug">{{ entry.drug.Name if entry.drug else '-' }}</h3>
-                    <span class="entry-score">
-                        Score: {{ entry.ImprovementScore or '-' }}
-                    </span>
-                </div>
+        {% for entry in entries %}
+        <div class="entry-card" onclick="toggleActions(this)">
 
-                <div class="entry-card-body">
-                    <p><strong>Disease:</strong> {{ entry.disease.Name if entry.disease else '-' }}</p>
-                    <p><strong>Side Effect:</strong> {{ entry.side_effect.Name if entry.side_effect else '-' }}</p>
-                    <p><strong>Age:</strong> {{ entry.Age or '-' }} | <strong>Gender:</strong> {{ entry.Gender or '-' }}</p>
-                    <p><strong>Dose:</strong> {{ entry.Dose or '-' }} | <strong>Duration:</strong> {{ entry.DurationDays or '-' }} days</p>
-                </div>
-
-                <div class="entry-card-footer">
-                    <a href="{{ url_for('edit_entry', entry_id=entry.idEntry) }}" class="entry-btn edit-btn">Edit</a>
-
-                    <form method="POST" action="{{ url_for('delete_entry', entry_id=entry.idEntry) }}" 
-                        onsubmit="return confirm('Are you sure you want to delete this entry?');" style="display:inline;">
-                        <button type="submit" class="entry-btn delete-btn">Delete</button>
-                    </form>
-                </div>
-
+            <div class="entry-card-header">
+                <h3 class="entry-drug">{{ entry.drug.Name if entry.drug else '-' }}</h3>
+                <span class="entry-score">
+                    Score: {{ entry.ImprovementScore or '-' }}
+                </span>
             </div>
-            {% endfor %}
+
+            <div class="entry-card-body">
+                <p><strong>Disease:</strong> {{ entry.disease.Name if entry.disease else '-' }}</p>
+                <p><strong>Side Effect:</strong> {{ entry.side_effect.Name if entry.side_effect else '-' }}</p>
+                <p><strong>Age:</strong> {{ entry.Age or '-' }} years | <strong>Gender:</strong> {{ entry.Gender or '-' }}</p>
+                <p><strong>Dose:</strong> {{ entry.Dose or '-' }} mg/ml | <strong>Duration:</strong> {{ entry.DurationDays or '-' }} days</p>
+            </div>
+
+            <div class="entry-card-footer">
+                <a href="{{ url_for('edit_entry', entry_id=entry.idEntry) }}" class="entry-btn edit-btn">Edit</a>
+                <form method="POST" action="{{ url_for('delete_entry', entry_id=entry.idEntry) }}" 
+                    onsubmit="return confirm('Are you sure you want to delete this entry?');" style="display:inline;">
+                    <button type="submit" class="entry-btn delete-btn">Delete</button>
+                </form>
+            </div>
+
+            <!-- Hidden actions for PDF & Similar Analysis -->
+            <div class="entry-card-actions" style="display:none;">
+                <a href="{{ url_for('export_pdf', entry_id=entry.idEntry) }}" class="entry-btn download-btn">
+                    Download PDF
+                </a>
+                <a href="{{ url_for('similar_analysis', entry_id=entry.idEntry) }}" 
+                class="entry-btn analysis-btn">
+                    Similar Analysis
+                </a>
+            </div>
+
+        </div>
+        {% endfor %}
         </div>
 
     {% elif no_filter_results %}
@@ -79,5 +103,17 @@
 
 
 </div>
+<script>
+function toggleActions(card) {
+    const actions = card.querySelector('.entry-card-actions');
+    if (!actions) return;
 
+    // Toggle visibility
+    if (actions.style.display === 'none' || actions.style.display === '') {
+        actions.style.display = 'flex';
+    } else {
+        actions.style.display = 'none';
+    }
+}
+</script>
 {% endblock %}

@@ -754,7 +754,6 @@ tr:hover {
     color: #fff;
 }
 
-
 .side-effects-list {
     color: #bbb;
     line-height: 1.6;
@@ -1345,34 +1344,6 @@ tr:hover {
     transition: 0.2s;
 }
 
-.entry-card-actions {
-    margin-top: 12px;
-    display: flex;
-    gap: 10px;
-}
-
-.download-btn {
-    background-color: #4554f7;
-    color: #9cd9f2;
-}
-
-.download-btn:hover {
-    background-color: #1a2492;
-    color: #fff;
-    box-shadow: 0 0 15px var(--primary-neon);
-}
-
-.analysis-btn {
-    background-color: #84247f;
-    color: #9cd9f2;
-}
-
-.analysis-btn:hover {
-    background-color: #5e195b;
-    color: #fff;
-    box-shadow: 0 0 15px var(--primary-neon);
-}
-
 .edit-btn {
     background: #1ff177;
     color: #fff;
@@ -1381,7 +1352,6 @@ tr:hover {
 .edit-btn:hover {
     background: #2ecc71;
     color: #000000;
-    box-shadow: 0 0 15px var(--primary-neon);
 }
 
 .delete-btn {
@@ -1765,22 +1735,6 @@ tr:hover {
     color: #000;
 }
 
-.pdf-button {
-    font-size: 1rem;        /* slightly bigger text */
-    padding: 12px 20px;     /* bigger button */
-    display: inline-flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: 4px;
-}
-
-.pdf-button .pdf-subtitle {
-    font-size: 0.75rem;     /* small subtitle under main text */
-    color: #aaa;            /* lighter color */
-    font-weight: normal;
-}
-
 /* SIDE EFFECTS EXPANSION */
 /* ── Section label ── */
 .se-section-label {
@@ -1896,7 +1850,6 @@ tr:hover {
 }
 
 
-
     /* ── Severity grid ── */
 .drug-section-title {
     color: var(--primary-neon);
@@ -1933,8 +1886,6 @@ tr:hover {
 .severity-major .severity-dot { background: #ff4d4d; }
 .severity-major .sev-plus { color: #ff4d4d; }
 
-
-
 /* Moderate — Orange */
 .severity-moderate {
     border-color: rgba(245, 158, 11, 0.5);
@@ -1958,9 +1909,6 @@ tr:hover {
 }
 .severity-minor .severity-dot { background: #FFFF00; }
 .severity-minor .sev-plus { color: #FFFF00; }
-
-
-
 
 /* Unknown — Grey */
 .severity-unknown {
@@ -2003,8 +1951,6 @@ tr:hover {
     font-weight: bold;
 }
 
-
-
 /* Body */
 .severity-box-body {
     padding: 12px 16px;
@@ -2039,8 +1985,6 @@ tr:hover {
     margin: 10px 0;
     font-style: italic;
 }
-
-
 
 /* Responsive */
 @media (max-width: 650px) {
@@ -2078,9 +2022,6 @@ tr:hover {
     width: auto;
     display: inline-block;
 }
-
-
-
 /* Per-colour variants */
 .filter-major    { border-color: #ff4d4d; color: #ff4d4d; }
 .filter-moderate { border-color: #f59e0b; color: #f59e0b; }
@@ -2095,7 +2036,7 @@ tr:hover {
 .filter-unknown.active  { background: rgba(150,150,150,0.15); }
 
 /* Inactive = dimmed */
-.filter-btn2:not(.active):not(.filter-all) {
+.filter-btn:not(.active):not(.filter-all) {
     opacity: 0.35;
 }
 
