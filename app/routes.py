@@ -8,14 +8,16 @@ from app.forms import LoginForm, RegistrationForm, EntryForm, SimpleSearchForm, 
 from app.models import User, Drug, Disease, Interaction, Entry, SideEffect
 from datetime import datetime, timedelta
 import re
+from collections import Counter
 
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import cm
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
-from reportlab.lib.enums import TA_CENTER, TA_LEFT
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable, ListFlowable, ListItem
+from reportlab.lib.enums import TA_CENTER
 from io import BytesIO
+
 
 # =====================================================
 # HOME
@@ -52,7 +54,7 @@ def public_interactions():
 
     # 3. If we have a query (regardless of the source), start the search!
     if query:
-        drug_names = [d.strip() for d in query.replace(',', ' ').split() if d.strip()]
+        drug_names = [d.strip() for d in form.drug_name.data.split(",") if d.strip()]
 
         # FIND DRUGS
         for name in drug_names:
@@ -211,7 +213,6 @@ def public_side_effects():
             SIDE_EFFECTS_BLACKLIST = ["Wrong technique in product usage process"]
 
             # Count how many entries in the Entry table reported each side effect for this drug
-            from sqlalchemy import func
             freq_rows = (
                 db.session.query(SideEffect, func.count(Entry.idEntry).label('cnt'))
                 .join(Entry, Entry.SideEffects_idSideEffect == SideEffect.idSideEffect)
@@ -336,12 +337,17 @@ def entry():
         side_effect_name = form.side_effects.data.strip()
 
         age = form.age.data
-        gender = form.gender.data
+        if form.gender.data.lower() == 'not_specified':
+            error_message = f"Please select a gender"
+            return render_template("entry.html", form=form, error_message=error_message)
+        else:
+            gender = form.gender.data
         dose = form.dose.data
         duration = form.duration.data
+        treatmentScore=form.treatment_score.data
 
         # ---------- PROCESS DRUGS ----------
-        drug_names = [d.strip() for d in drug_names_raw.replace(",", " ").split()]
+        drug_names = [d.strip() for d in form.drug_name.data.split(",") if d.strip()]
         found_drugs = []
 
         for name in drug_names:
@@ -374,6 +380,7 @@ def entry():
             return render_template("entry.html", form=form, error_message=error_message)
 
         # ---------- SAVE ENTRIES ----------
+        saved_entries = []
         for drug in found_drugs:
             new_entry = Entry(
                 Age=age,
@@ -383,23 +390,83 @@ def entry():
                 Drugs_idDrug=drug.idDrug,
                 Diseases_idDisease=disease.idDisease,
                 SideEffects_idSideEffect=side_effect.idSideEffect,
-                Users_idUsers=current_user.iduser
+                Users_idUsers=current_user.iduser,
+                ImprovementScore=treatmentScore
             )
             db.session.add(new_entry)
+            saved_entries.append(new_entry)
 
         db.session.commit()
 
-        success_message = "Profile saved successfully and interactions analyzed."
+        success_message = "Profile saved successfully and analyzed."
 
+        last_entry = saved_entries[-1] if saved_entries else None
+        disease_name = last_entry.disease.Name if last_entry and last_entry.disease else None
         form = EntryForm()
 
         return render_template(
             "entry.html",
             form=form,
-            success_message=success_message
+            success_message=success_message,
+            show_analysis_buttons=True,
+            last_profile=last_entry,
+            disease_name=disease_name
         )
 
     return render_template("entry.html", form=form)
+
+@app.route('/similar-analysis')
+@login_required
+def similar_analysis():
+
+    age = int(request.args.get('age')) 
+    gender = request.args.get('gender')
+    disease_id = int(request.args.get('disease_id'))
+    
+    min_age = age - 10
+    max_age = age + 10
+
+    similar_entries = Entry.query.filter(
+        Entry.Gender == gender,
+        Entry.Diseases_idDisease == disease_id,
+        Entry.Age.between(min_age, max_age),
+        Entry.Users_idUsers != current_user.iduser 
+    ).all()
+
+    total_similar = len(similar_entries)
+    disease_id = request.args.get("disease_id")
+
+    disease_name = None
+    if disease_id:
+        disease = Disease.query.get(disease_id)
+        if disease:
+            disease_name = disease.Name
+
+    # --- Count drugs ---
+    drug_counter = Counter()
+    side_counter = Counter()
+    scores = []
+
+    for e in similar_entries:
+        drug_counter[e.drug.Name] += 1
+        side_counter[e.side_effect.Name] += 1
+        if e.ImprovementScore:
+            scores.append(e.ImprovementScore)
+
+    top_drugs = drug_counter.most_common(5)
+    top_side_effects = side_counter.most_common(5)
+    avg_score = round(sum(scores)/len(scores), 1) if scores else None
+
+    return render_template(
+        'similar_analysis.html',
+        total_similar=total_similar,
+        top_drugs=top_drugs,
+        top_side_effects=top_side_effects,
+        avg_score=avg_score,
+        age=age,
+        gender=gender,
+        disease_name=disease_name 
+    )
 
 
 @app.route('/user')
@@ -455,7 +522,7 @@ def delete_entry(entry_id):
     entry = Entry.query.get_or_404(entry_id)
 
     if entry.Users_idUsers != current_user.id:
-        flash("You are not authorized to delete this entry.", "danger")
+        flash("You are not authorized to delete this entry.", "error")
         return redirect(url_for('user'))
 
     db.session.delete(entry)
@@ -471,34 +538,55 @@ def edit_entry(entry_id):
     entry = Entry.query.get_or_404(entry_id)
 
     if entry.Users_idUsers != current_user.id:
-        flash("You are not authorized to edit this entry.", "danger")
+        flash("You are not authorized to modify this entry.", "error")
         return redirect(url_for('user'))
 
     form = EntryForm(
-        drug_name=entry.drug.Name if entry.drug else "",
+        drug_name=entry.drug.Name,
         age=entry.Age,
         gender=entry.Gender,
-        condition=entry.disease.Name if entry.disease else "",
-        side_effects=entry.side_effect.Name if entry.side_effect else "",
+        condition=entry.disease.Name,
+        side_effects=entry.side_effect.Name,
         dose=entry.Dose,
         duration=entry.DurationDays,
         treatment_score=entry.ImprovementScore
     )
 
     if form.validate_on_submit():
-        entry.Age = form.age.data
-        entry.Gender = form.gender.data
-        entry.Dose = form.dose.data
-        entry.DurationDays = form.duration.data
-        entry.ImprovementScore = form.treatment_score.data
+        drug_names = [d.strip() for d in form.drug_name.data.split(",") if d.strip()]
+        found_drugs = []
+
+        for name in drug_names:
+            drug = Drug.query.filter(
+                func.lower(Drug.Name).like(f"%{name.lower()}%")
+            ).first()
+            if drug:
+                found_drugs.append(drug)
+
+
+        disease = Disease.query.filter(
+            func.lower(Disease.Name).like(f"%{form.condition.data.lower()}%")
+        ).first()
+
+        side_effect = SideEffect.query.filter(
+            func.lower(SideEffect.Name).like(f"%{form.side_effects.data.lower()}%")
+        ).first()
+
+        for drug in found_drugs:
+            entry.Age = form.age.data
+            entry.Gender = form.gender.data
+            entry.Dose = form.dose.data
+            entry.DurationDays = form.duration.data
+            entry.ImprovementScore = form.treatment_score.data
+            entry.Drugs_idDrug=drug.idDrug,
+            entry.Diseases_idDisease=disease.idDisease,
+            entry.SideEffects_idSideEffect=side_effect.idSideEffect,
+            
         db.session.commit()
-        flash("Entry updated successfully.", "success")
+        flash("Entry modified successfully.", "success")
         return redirect(url_for('user'))
 
     return render_template("entry.html", form=form, edit=True, entry=entry)
-
-
-
 
 
 @app.route('/stats')
@@ -506,7 +594,7 @@ def edit_entry(entry_id):
 def stats():
 
     # ─────────────────────────────
-    # GLOBAL STATS (allowed)
+    # GLOBAL STATS
     # ─────────────────────────────
     total_drugs = Drug.query.count()
     total_interactions_db = Interaction.query.count()
@@ -578,9 +666,7 @@ def stats():
 
 
 # ════════════════════════════════════════════════════════════════
-#  ROUTE 1 — Drug autocomplete API
-#  Used by the type-ahead in index.html
-#  GET /api/drugs?q=asp  →  ["Aspirin", "Aspartame", ...]
+#  Drug autocomplete API
 # ════════════════════════════════════════════════════════════════
 
 @app.route('/api/drugs')
@@ -600,194 +686,290 @@ def api_drugs():
 
 
 # ════════════════════════════════════════════════════════════════
-#  ROUTE 2 — PDF export
-#  POST /export-pdf   (receives same form data as the search)
-#  Returns a downloadable PDF report
+#  PDF export
 # ════════════════════════════════════════════════════════════════
 
-@app.route('/export-pdf', methods=['POST'])
+@app.route('/export_pdf/<int:entry_id>')
 @login_required
-def export_pdf():
-    # ── Re-run the same search logic as your index() route ──────
-    drug_input = request.form.get('drug_name', '')
-    age        = request.form.get('age', '')
-    gender     = request.form.get('gender', '')
-    condition  = request.form.get('condition', '')
+def export_pdf(entry_id):
+    entry = Entry.query.get_or_404(entry_id)
+    severity_order = {
+        "Major": 3,
+        "Moderate": 2,
+        "Minor": 1,
+        "Unknown": 0
+    }
 
-    drug_names = [d.strip() for d in re.split(r'[,\s]+', drug_input) if d.strip()]
+    severity_colors = {
+        "Major": colors.Color(255/255, 77/255, 77/255, alpha=51/255),
+        "Moderate": colors.Color(245/255, 144/255, 11/255, alpha=51/255),
+        "Minor": colors.Color(255/255, 255/255, 0/255, alpha=51/255),
+        "Unknown": colors.Color(150/255, 150/255, 150/255, alpha=38/255)
+    }
 
-    drugs        = []
-    interactions = []
+    # ── Get latest user profile ─────────────────────────────
+    latest = Entry.query.filter_by(
+        Users_idUsers=current_user.iduser
+    ).order_by(Entry.idEntry.desc()).first()
 
-    for name in drug_names:
-        drug = Drug.query.filter(Drug.Name.ilike(name)).first()
-        if drug:
-            drugs.append(drug)
+    if not latest:
+        return "No data available."
 
-    # Check interactions between found drugs
-    for i in range(len(drugs)):
-        for j in range(i + 1, len(drugs)):
-            inter = Interaction.query.filter(
-                ((Interaction.drug1_id == drugs[i].idDrug) & (Interaction.drug2_id == drugs[j].idDrug)) |
-                ((Interaction.drug1_id == drugs[j].idDrug) & (Interaction.drug2_id == drugs[i].idDrug))
-            ).first()
-            if inter:
-                inter.drug1_name = drugs[i].Name
-                inter.drug2_name = drugs[j].Name
-                interactions.append(inter)
+    age = latest.Age
+    gender = latest.Gender
+    disease = Disease.query.get(latest.Diseases_idDisease)
+    disease_name = disease.Name if disease else "Unknown"
 
-    # ── Build PDF in memory ──────────────────────────────────────
+    # Get related entries (same profile)
+    entries = Entry.query.filter_by(
+        Users_idUsers=current_user.iduser,
+        Age=age,
+        Gender=gender,
+        Diseases_idDisease=latest.Diseases_idDisease
+    ).all()
+
+    # Unique drugs only
+    drug_ids = {e.Drugs_idDrug for e in entries}
+    drugs = Drug.query.filter(Drug.idDrug.in_(drug_ids)).all()
+
+    # ── Interactions ─────────────────────────────────────────
+    interactions_by_drug = {}
+
+    for drug in drugs:
+        conflicts = Interaction.query.filter(
+            (Interaction.drug1_id == drug.idDrug) |
+            (Interaction.drug2_id == drug.idDrug)
+        ).all()
+
+        unique = set()
+        drug_interactions = []
+
+        for conflict in conflicts:
+            d1 = conflict.drug1.Name.title()
+            d2 = conflict.drug2.Name.title()
+            sev = conflict.severity or "Unknown"
+
+            key = tuple(sorted([d1, d2]))
+            if key in unique:
+                continue
+            unique.add(key)
+
+            drug_interactions.append({
+                "drug1_name": d1,
+                "drug2_name": d2,
+                "severity": sev
+            })
+
+        # Sort by severity (highest first)
+        drug_interactions.sort(
+            key=lambda x: severity_order.get(x["severity"], 0),
+            reverse=True
+        )
+
+        interactions_by_drug[drug.Name.title()] = drug_interactions
+    # ── PDF setup ────────────────────────────────────────────
     buffer = BytesIO()
     doc = SimpleDocTemplate(
-        buffer,
-        pagesize=A4,
+        buffer, pagesize=A4,
         rightMargin=2*cm, leftMargin=2*cm,
-        topMargin=2*cm,   bottomMargin=2*cm,
+        topMargin=2*cm, bottomMargin=2*cm
     )
 
-    # Colour palette matching RXInsight theme
-    NEON    = colors.HexColor('#03e9f4')
-    DARK    = colors.HexColor('#0f2027')
-    RED     = colors.HexColor('#ff4d4d')
-    GREY    = colors.HexColor('#aaaaaa')
-    WHITE   = colors.white
-    DARKROW = colors.HexColor('#1a2a30')
+    # Colors (cleaner clinical look)
+    NEON = colors.HexColor("#19d8e2")
+    DARK = colors.HexColor("#1a2a30")
+    GREY = colors.HexColor("#666666")
+    LIGHT = colors.HexColor("#f4f7f9")
+    RED = colors.HexColor("#d9534f")
 
     styles = getSampleStyleSheet()
 
-    # Custom paragraph styles
-    title_style = ParagraphStyle('Title', fontSize=22, textColor=NEON,
-                                 alignment=TA_CENTER, fontName='Helvetica-Bold',
-                                 spaceAfter=4)
-    sub_style   = ParagraphStyle('Sub', fontSize=9, textColor=GREY,
-                                 alignment=TA_CENTER, spaceAfter=2)
-    h2_style    = ParagraphStyle('H2', fontSize=13, textColor=NEON,
-                                 fontName='Helvetica-Bold', spaceBefore=14, spaceAfter=6)
-    h3_style    = ParagraphStyle('H3', fontSize=11, textColor=WHITE,
-                                 fontName='Helvetica-Bold', spaceBefore=8, spaceAfter=4)
-    body_style  = ParagraphStyle('Body', fontSize=9, textColor=WHITE,
-                                 leading=14, spaceAfter=3)
-    warn_style  = ParagraphStyle('Warn', fontSize=10, textColor=RED,
-                                 fontName='Helvetica-Bold', spaceBefore=6, spaceAfter=4)
+    title = ParagraphStyle(
+        'Title', fontSize=20, textColor=NEON,
+        alignment=TA_CENTER, spaceAfter=4,
+        fontName='Helvetica-Bold'
+    )
+
+    subtitle = ParagraphStyle(
+        'Sub', fontSize=9, textColor=GREY,
+        alignment=TA_CENTER, spaceAfter=12
+    )
+
+    h2 = ParagraphStyle(
+        'H2', fontSize=13, textColor=NEON,
+        fontName='Helvetica-Bold', spaceBefore=12, spaceAfter=6
+    )
+
+    h3 = ParagraphStyle(
+        'H3', fontSize=12, textColor=DARK,
+        fontName='Helvetica-Bold', spaceBefore=12, spaceAfter=6
+    )
+
+    normal = ParagraphStyle(
+        'Normal', fontSize=10, textColor=colors.black, leading=14
+    )
+
+    small = ParagraphStyle(
+        'Small', fontSize=8, textColor=GREY
+    )
 
     story = []
 
-    # ── Header ───────────────────────────────────────────────────
-    story.append(Paragraph("RXInsight", title_style))
-    story.append(Paragraph("Drug Analysis Report", sub_style))
+    # ── Header ───────────────────────────────────────────────
+    story.append(Paragraph("RXInsight - Patient Report", title))
     story.append(Paragraph(
-        f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}  ·  User: {current_user.email}",
-        sub_style
+        f"<br/>Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')} | {current_user.email}",
+        subtitle
     ))
-    story.append(HRFlowable(width="100%", thickness=1, color=NEON, spaceAfter=14))
+    story.append(HRFlowable(width="100%", thickness=1, color=NEON))
 
-    # ── Patient info table ───────────────────────────────────────
-    story.append(Paragraph("Patient Profile", h2_style))
-    patient_data = [
-        ['Age', age or '—',  'Gender', gender or '—'],
-        ['Condition', condition or 'None', 'Medications', drug_input],
+    # ── Patient profile ───────────────────────────────────────
+    story.append(Paragraph("Patient Profile", h2))
+
+    profile_items = [
+        f"<b>Age:</b> {age}",
+        f"<b>Gender:</b> {gender}",
+        f"<b>Condition:</b> {disease_name}",
+        f"<b>Medications:</b> {', '.join(d.Name.title() for d in drugs)}"
     ]
-    pt = Table(patient_data, colWidths=[3*cm, 6*cm, 3*cm, 5.5*cm])
-    pt.setStyle(TableStyle([
-        ('BACKGROUND',  (0,0), (-1,-1), DARKROW),
-        ('TEXTCOLOR',   (0,0), (-1,-1), WHITE),
-        ('TEXTCOLOR',   (0,0), (0,-1), NEON),
-        ('TEXTCOLOR',   (2,0), (2,-1), NEON),
-        ('FONTNAME',    (0,0), (0,-1), 'Helvetica-Bold'),
-        ('FONTNAME',    (2,0), (2,-1), 'Helvetica-Bold'),
-        ('FONTSIZE',    (0,0), (-1,-1), 9),
-        ('ROWBACKGROUNDS', (0,0), (-1,-1), [DARKROW, colors.HexColor('#243540')]),
-        ('GRID',        (0,0), (-1,-1), 0.5, colors.HexColor('#333333')),
-        ('PADDING',     (0,0), (-1,-1), 7),
-    ]))
-    story.append(pt)
-    story.append(Spacer(1, 14))
 
-    # ── Interactions ─────────────────────────────────────────────
-    if interactions:
-        story.append(HRFlowable(width="100%", thickness=1, color=RED, spaceAfter=8))
-        story.append(Paragraph("⚠ Critical Interactions", warn_style))
-        for inter in interactions:
-            inter_data = [
-                [f"{inter.drug1_name}  +  {inter.drug2_name}"],
-                [inter.description or ''],
-                [f"Severity: {inter.severity or 'Unknown'}"],
-            ]
-            it = Table(inter_data, colWidths=[17.5*cm])
-            it.setStyle(TableStyle([
-                ('BACKGROUND',  (0,0), (-1,0), colors.HexColor('#3a0000')),
-                ('BACKGROUND',  (0,1), (-1,1), colors.HexColor('#2a0000')),
-                ('BACKGROUND',  (0,2), (-1,2), colors.HexColor('#1f0000')),
-                ('TEXTCOLOR',   (0,0), (-1,0), RED),
-                ('TEXTCOLOR',   (0,1), (-1,1), WHITE),
-                ('TEXTCOLOR',   (0,2), (-1,2), RED),
-                ('FONTNAME',    (0,0), (-1,0), 'Helvetica-Bold'),
-                ('FONTSIZE',    (0,0), (-1,-1), 9),
-                ('PADDING',     (0,0), (-1,-1), 8),
-                ('BOX',         (0,0), (-1,-1), 1, RED),
-            ]))
-            story.append(it)
-            story.append(Spacer(1, 8))
-        story.append(HRFlowable(width="100%", thickness=1, color=RED, spaceAfter=8))
+    profile_list = ListFlowable(
+        [ListItem(Paragraph(item, normal)) for item in profile_items],
+        bulletType='bullet',
+        leftIndent=10,
+        spaceBefore=4,
+        spaceAfter=8
+    )
 
-    # ── Drug details ─────────────────────────────────────────────
-    if drugs:
-        story.append(Paragraph("Drug Analysis", h2_style))
-        for drug in drugs:
-            story.append(Paragraph(drug.Name, h3_style))
-            story.append(Paragraph(
-                f"<b><font color='#03e9f4'>Indication:</font></b>  {drug.diseases or 'Not available'}",
-                body_style
-            ))
+    story.append(profile_list)
+    story.append(HRFlowable(width="100%", thickness=0.5, color=colors.grey, spaceAfter=6))
 
-            side_effects = [se.effect for se in drug.side_effects[:20]]  # cap at 20
-            if side_effects:
-                story.append(Paragraph("<b><font color='#aaaaaa'>Known Side Effects:</font></b>", body_style))
-                # Two-column layout for side effects
-                half = (len(side_effects) + 1) // 2
-                col1 = side_effects[:half]
-                col2 = side_effects[half:]
+    # ── Interactions section (ALWAYS shown) ───────────────────
+    story.append(Paragraph("Drug Interactions", h2))
+
+    has_any_interactions = any(interactions_by_drug.values())
+
+    if has_any_interactions:
+
+        for drug_name, interactions in interactions_by_drug.items():
+            story.append(Paragraph(drug_name, h3))
+
+            if interactions:
                 rows = []
-                for k in range(half):
-                    left  = f"• {col1[k]}" if k < len(col1) else ''
-                    right = f"• {col2[k]}" if k < len(col2) else ''
-                    rows.append([left, right])
-                se_table = Table(rows, colWidths=[8.5*cm, 8.5*cm])
-                se_table.setStyle(TableStyle([
-                    ('TEXTCOLOR',  (0,0), (-1,-1), GREY),
-                    ('FONTSIZE',   (0,0), (-1,-1), 8),
-                    ('ROWBACKGROUNDS', (0,0), (-1,-1), [DARKROW, colors.HexColor('#1e2e35')]),
-                    ('PADDING',    (0,0), (-1,-1), 5),
-                ]))
-                story.append(se_table)
+                row_colors = []
+
+                for inter in interactions:
+                    text = f"{inter['drug1_name']}  +  {inter['drug2_name']}"
+                    sev  = inter["severity"]
+
+                    rows.append([text, sev])
+                    row_colors.append(severity_colors.get(sev, severity_colors["Unknown"]))
+
+                table = Table(rows, colWidths=[12*cm, 5*cm])
+
+                style = [
+                    ('TEXTCOLOR', (0,0), (-1,-1), colors.HexColor("#000000")),
+                    ('FONTNAME', (0,0), (-1,-1), 'Helvetica'),
+                    ('FONTSIZE', (0,0), (-1,-1), 9),
+                    ('GRID', (0,0), (-1,-1), 0.3, colors.HexColor('#333333')),
+                    ('PADDING', (0,0), (-1,-1), 6),
+                ]
+
+                # Apply background per row
+                for i, color in enumerate(row_colors):
+                    style.append(('BACKGROUND', (0,i), (-1,i), color))
+
+                table.setStyle(TableStyle(style))
+                story.append(table)
+
             else:
-                story.append(Paragraph("No side effects listed.", body_style))
+                story.append(Paragraph("No known interactions.", normal))
 
-            story.append(Spacer(1, 10))
+            story.append(Spacer(1, 8))
 
-    # ── Footer ───────────────────────────────────────────────────
-    story.append(HRFlowable(width="100%", thickness=0.5, color=GREY, spaceBefore=20, spaceAfter=6))
-    story.append(Paragraph(
-        "This report is generated for informational purposes only and does not constitute medical advice. "
-        "Always consult a licensed healthcare professional before making medication decisions.",
-        ParagraphStyle('Disclaimer', fontSize=7, textColor=GREY, alignment=TA_CENTER)
-    ))
+    else:
+        story.append(Paragraph("No known interactions for the selected medications.", normal))
+    story.append(Spacer(1, 6))
+    story.append(HRFlowable(width="100%", thickness=0.5, color=colors.grey, spaceAfter=6))
 
-    # ── Build and return ─────────────────────────────────────────
-    doc.build(story)
+
+    # ── Side effects ──────────────────────────────────────────
+    story.append(Paragraph("Possible Side Effects", h2))
+
+    for drug in drugs:
+        story.append(Paragraph(f"<b>{drug.Name.title()}</b>", normal))
+
+        effects = list({se.Name for se in drug.side_effects[:15]})
+
+        if effects:
+            # two-column layout
+            half = (len(effects) + 1) // 2
+            rows = []
+            for i in range(half):
+                left = effects[i] if i < len(effects) else ""
+                right = effects[i+half] if i+half < len(effects) else ""
+                rows.append([left, right])
+
+            se_table = Table(rows, colWidths=[8*cm, 8*cm])
+            se_table.setStyle(TableStyle([
+                ('BACKGROUND', (0,0), (-1,-1), LIGHT),
+                ('FONTSIZE', (0,0), (-1,-1), 8),
+                ('PADDING', (0,0), (-1,-1), 4)
+            ]))
+            story.append(se_table)
+        else:
+            story.append(Paragraph("No data available.", small))
+
+        story.append(Spacer(1, 6))
+
+    # ── Footer ────────────────────────────────────────────────
+    def draw_footer(canvas, doc):
+        canvas.saveState()
+
+        footer_y = 1.5 * cm
+
+        # Line
+        canvas.setStrokeColor(colors.grey)
+        canvas.setLineWidth(0.5)
+        canvas.line(2*cm, footer_y + 10, A4[0] - 2*cm, footer_y + 10)
+
+        # Text
+        canvas.setFont("Helvetica", 8)
+        canvas.setFillColor(colors.grey)
+
+        canvas.drawCentredString(
+            A4[0] / 2,
+            footer_y,
+            "RXInsight Report — For informational purposes only. Not medical advice."
+        )
+
+        # Page number (optional but professional)
+        canvas.drawRightString(
+            A4[0] - 2*cm,
+            footer_y - 10,
+            f"Page {doc.page}"
+        )
+
+        canvas.restoreState()
+
+    # Build
+    doc.build(
+        story,
+        onFirstPage=draw_footer,
+        onLaterPages=draw_footer
+    )
     buffer.seek(0)
 
     filename = f"RXInsight_Report_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
+
     response = make_response(buffer.read())
-    response.headers['Content-Type']        = 'application/pdf'
-    response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
+    response.headers['Content-Type'] = 'application/pdf'
+    response.headers['Content-Disposition'] = f'attachment; filename={filename}'
     return response
 
 
 # ════════════════════════════════════════════════════════════════
-#  ROUTE 3 — Condition autocomplete API
-#  Used by the type-ahead in public_conditions.html
-#  GET /api/conditions?q=diab  →  ["Diabetes", "Diabetic Neuropathy", ...]
+# Condition autocomplete API
 # ════════════════════════════════════════════════════════════════
 
 @app.route('/api/conditions')
@@ -806,6 +988,9 @@ def api_conditions():
 
     return jsonify([d.Name for d in results if d.Name])
 
+# ════════════════════════════════════════════════════════════════
+# Side effects autocomplete API
+# ════════════════════════════════════════════════════════════════
 
 @app.route('/api/sideeffects')
 def api_sideeffects():
