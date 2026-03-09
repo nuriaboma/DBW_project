@@ -419,10 +419,23 @@ def entry():
 @login_required
 def similar_analysis():
 
-    age = int(request.args.get('age')) 
-    gender = request.args.get('gender')
-    disease_id = int(request.args.get('disease_id'))
-    
+    entry_id = request.args.get("entry_id")
+
+    if not entry_id:
+        flash("Entry not found for analysis.", "error")
+        return redirect(url_for("entry"))
+
+    entry = Entry.query.get(entry_id)
+
+    if not entry:
+        flash("Entry does not exist.", "error")
+        return redirect(url_for("entry"))
+
+    age = entry.Age
+    gender = entry.Gender
+    disease_id = entry.Diseases_idDisease
+
+
     min_age = age - 10
     max_age = age + 10
 
