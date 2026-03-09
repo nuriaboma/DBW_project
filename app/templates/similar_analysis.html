@@ -17,8 +17,8 @@
 
     <!-- SUMMARY CARD -->
     <div class="similar-summary-card">
-        <div class="summary-number">{{ total_similar }}</div>
-        <div class="summary-label">Matching patient profiles found</div>
+        <span class="summary-number">{{ total_similar }}</span>
+        <span class="summary-label">Matching patient profiles found</span>
 
         {% if total_similar < 5 %}
             <div class="summary-warning">
@@ -35,7 +35,7 @@
             <h3 class="similar-card-title">Most Used Medications</h3>
 
             {% if top_drugs %}
-                <canvas id="drugsChart" height="220"></canvas>
+                <canvas id="drugsChart" height="160"></canvas>
             {% else %}
                 <p class="similar-empty">No medication data available.</p>
             {% endif %}
@@ -46,7 +46,7 @@
             <h3 class="similar-card-title">Most Reported Side Effects</h3>
 
             {% if top_side_effects %}
-                <canvas id="effectsChart" height="220"></canvas>
+                <canvas id="effectsChart" height="160"></canvas>
             {% else %}
                 <p class="similar-empty">No side effect data available.</p>
             {% endif %}

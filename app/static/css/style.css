@@ -975,7 +975,7 @@ tr:hover td { background: var(--b-0); }
 .stats-header { text-align: center; margin-bottom: 40px; }
 
 .stats-title { font-size: clamp(1.8rem, 4vw, 2.6rem); font-weight: 900; font-style: italic; letter-spacing: -1.5px; color: var(--t-0); margin-bottom: 8px; }
-.stats-subtitle { color: var(--t-2); text-transform: uppercase; letter-spacing: 3px; font-size: 0.64rem; font-weight: 600; }
+.stats-subtitle { color: var(--t-2); text-transform: uppercase; letter-spacing: 3px; font-size: 1rem; font-weight: 600; }
 
 /* KPI */
 .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); gap: 12px; margin-bottom: 24px; }
@@ -1026,6 +1026,12 @@ tr:hover td { background: var(--b-0); }
 .chart-card { background: var(--surface-2); border: 1px solid var(--b-1); border-radius: var(--r12); padding: 22px 26px; }
 .chart-title { color: var(--t-2); text-transform: uppercase; letter-spacing: 1.8px; font-size: 0.62rem; margin-bottom: 18px; font-weight: 600; text-align: left; }
 
+.similar-card {
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 12px;
+    padding: 20px;
+}
+.similar-card-title {margin-bottom: 15px;margin-top: 15px;}
 .neon { color: var(--teal); }
 .muted { color: var(--t-2); }
 .bold { font-weight: 700; }
